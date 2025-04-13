@@ -14,6 +14,7 @@ class Problem extends Model
         'prob_id',
         'prob_desc',
         'emp_id',
+        'dept_id',
         'pic_before',
         'location',
         'linked_report_id',
@@ -28,5 +29,10 @@ class Problem extends Model
     {
         return $this->hasMany(Problem::class,'prob_id','prob_id');
     }
+
+    public function dept() {
+        return $this->belongsTo(Dept::class, 'dept_id', 'dept_id');
+    }
+
 
 }

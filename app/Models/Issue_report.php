@@ -20,6 +20,7 @@ class Issue_report extends Model
         'status',
         'emp_id',
         'dept_id',
+        'responsible_dept_id',
     ];
 
     public function problem(){
@@ -47,4 +48,9 @@ class Issue_report extends Model
     public function hazardType(){
         return $this->belongsTo(HazardType::class,'hazard_type_id','hazard_type_id');
     }
+
+    public function responsibleDept()
+{
+    return $this->belongsTo(Dept::class, 'responsible_dept_id');
+}
 }

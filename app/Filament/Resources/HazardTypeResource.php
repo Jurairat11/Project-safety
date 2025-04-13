@@ -19,7 +19,7 @@ class HazardTypeResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-plus-circle';
 
-    protected static ?string $navigationGroup = 'Problem Report';
+    protected static ?string $navigationGroup = 'Issue Report';
 
     protected static ?int $navigationSort = 3;
 

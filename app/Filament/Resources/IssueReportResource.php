@@ -5,6 +5,7 @@ namespace App\Filament\Resources;
 use App\Filament\Resources\IssueReportResource\Pages;
 use App\Filament\Resources\IssueReportResource\RelationManagers;
 use App\Models\Issue_report;
+use App\Models\Dept;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
@@ -17,6 +18,10 @@ use Illuminate\Database\Eloquent\SoftDeletingScope;
 class IssueReportResource extends Resource
 {
     protected static ?string $model = Issue_report::class;
+
+    protected static ?string $navigationGroup = 'Issue Report';
+
+    protected static ?int $navigationSort = 1;
 
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
 
@@ -31,16 +36,21 @@ class IssueReportResource extends Resource
                         ->label('Problem ID')
                         ->relationship('problem','prob_id')
                         ->options(function () {
-                            return Problem::all()->pluck('prob_id', 'prob_id');
+                            return \App\Models\Problem::all()->pluck('prob_id', 'prob_id');
                         })
                         ->reactive()
                         ->afterStateUpdated(function (callable $set, $state) {
+                            $problem = \App\Models\Problem::find($state);
 
-                            $problem = Problem::find($state);
                             if ($problem) {
-
                                 $set('prob_desc', $problem->prob_desc);
                                 $set('emp_id', $problem->emp_id);
+
+                                // ดึงพนักงาน
+                                $employee = \App\Models\Employees::where('emp_id', $problem->emp_id)->first();
+                                if ($employee && $employee->dept_id) {
+                                    $set('dept_id', $employee->dept_id); // เซ็ตค่า dept_id
+                                }
                             }
                         })
                         ->required(),
@@ -48,11 +58,12 @@ class IssueReportResource extends Resource
                     Forms\Components\TextInput::make('emp_id')
                         ->label('Reporting employee'),
 
-
+                    Forms\Components\Select::make('dept_id')
+                        ->label('Reporter Department')
+                        ->relationship('dept','dept_name'),
 
                     Forms\Components\Textarea::make('prob_desc')
-                        ->label('Description')
-                        ->columnSpan(2),
+                        ->label('Description'),
 
                     Forms\Components\Fieldset::make('Issue Report')
                     ->schema([
@@ -77,14 +88,17 @@ class IssueReportResource extends Resource
                         ->default('pending')
                         ->required(),
 
-                        Forms\Components\Select::make('dept_id')
-                        ->label('Department')
-                        ->relationship('dept','dept_name'),
-
-                        Forms\Components\FileUpload::make('img_before')
+                    Forms\Components\FileUpload::make('img_before')
                         ->label('Picture Before')
                         ->directory('form-attachments')
                         ->visibility('public'),
+
+                    Forms\Components\Select::make('responsible_dept_id')
+                        ->label('Department')
+                        ->options(Dept::all()->pluck('dept_name', 'dept_id'))
+                        ->searchable()
+                        ->placeholder('Select responsible department')
+                        ->required(), // หากจำเป็นต้องกรอก
 
                     ])->columns(2),
 

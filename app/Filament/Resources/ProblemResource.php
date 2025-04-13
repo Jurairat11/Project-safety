@@ -19,6 +19,7 @@ use Filament\Forms\Components\Select;
 use Filament\Forms\Components\FileUpload;
 use App\Models\Employees;
 use App\Models\Issue_report;
+use App\Models\Dept;
 
 class ProblemResource extends Resource
 {
@@ -26,33 +27,28 @@ class ProblemResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-exclamation-circle';
 
-    protected static ?string $navigationGroup = 'Problem Report';
-
-    protected static ?int $navigationSort = 1;
-
     public static function form(Form $form): Form
     {
         return $form
             ->schema([
 
                 Select::make('emp_id')
-                            ->label('Reported by')
-                            ->options(function () {
-                                return \App\Models\Employees::all()->mapWithKeys(function ($employee) {
-                                    return [$employee->emp_id => $employee->full_name];
-                                });
-                            })
-                            ->searchable()
-                            ->required()
-                            ->getSearchResultsUsing(function (string $query) {
-                                return \App\Models\Employees::where('emp_id', 'like', "%{$query}%")
-                                    ->orWhere('full_name', 'like', "%{$query}%")
-                                    ->get()
-                                    ->mapWithKeys(function ($employee) {
-                                        return [$employee->emp_id => $employee->full_name];
-                                    });
-                            })
-                            ->placeholder("Select reported person"),
+                    ->label('Reported by')
+                    ->options(fn () => \App\Models\Employees::all()->pluck('full_name', 'emp_id'))
+                    ->searchable()
+                    ->required()
+                    ->reactive()
+                    ->afterStateUpdated(function ($state, callable $set) {
+                        $employee = \App\Models\Employees::where('emp_id', $state)->first();
+                        if ($employee && $employee->dept_id) {
+                            $set('dept_id', $employee->dept_id); // เซ็ตค่าจากพนักงาน
+                        }
+                    }),
+
+                Select::make('dept_id')
+                    ->label('Department')
+                    ->options(fn () => \App\Models\Dept::all()->pluck('dept_name', 'dept_id'))
+                    ->required(),
 
                 Textarea::make('prob_desc')
                     ->label('Description')
@@ -68,12 +64,6 @@ class ProblemResource extends Resource
                     ->label('Location')
                     ->required(),
 
-                Select::make('linked_report_id')
-                    ->label('Connect Issue Report')
-                    ->options(Issue_report::all()->pluck('id', 'id'))
-                    ->searchable()
-                    ->nullable(),
-
                 Select::make('status')
                     ->label('Status')
                     ->options([
@@ -84,6 +74,12 @@ class ProblemResource extends Resource
                     ->default('new')
                     ->disabled() // หากให้ระบบเปลี่ยนสถานะเอง
                     ->dehydrated(false), // ไม่ส่งกลับถ้า disabled
+
+                Select::make('linked_report_id')
+                    ->label('Connect Issue Report')
+                    ->options(Issue_report::all()->pluck('id', 'id'))
+                    ->searchable()
+                    ->nullable(),
             ]);
     }
 

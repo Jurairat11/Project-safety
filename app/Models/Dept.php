@@ -20,4 +20,9 @@ class Dept extends Model
     {
         return $this->hasMany(User::class,'dept_id','dept_id');
     }
+
+    public function issues()
+    {
+        return $this->hasMany(Issue_report::class, 'responsible_dept_id');
+    }
 }
