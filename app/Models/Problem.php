@@ -14,11 +14,19 @@ class Problem extends Model
         'prob_id',
         'prob_desc',
         'emp_id',
-        'status',
+        'pic_before',
+        'location',
+        'linked_report_id',
+        'status'
     ];
 
     public function employee() {
         return $this->belongsTo(Employees::class, 'emp_id', 'emp_id');
+    }
+
+    public function problem()
+    {
+        return $this->hasMany(Problem::class,'prob_id','prob_id');
     }
 
 }

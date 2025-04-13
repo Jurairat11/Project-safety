@@ -5,23 +5,39 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-
-class Safety extends Model
+class Issue_report extends Model
 {
-
     use HasFactory;
 
-    protected $primaryKey = 'safety_id';
+    protected $primaryKey = 'report_id';
     protected $fillable = [
+        'report_id',
         'prob_id',
+        'prob_desc',
         'hazard_level_id',
         'hazard_type_id',
-        'pic_before',
-        'pic_after'
+        'img_before',
+        'status',
+        'emp_id',
+        'dept_id',
     ];
 
     public function problem(){
         return $this->belongsTo(Problem::class,'prob_id','prob_id');
+    }
+
+    public function employee()
+    {
+        return $this->belongsTo(Employees::class, 'emp_id', 'emp_id');
+    }
+
+    public function dept(){
+        return $this->belongsTo(Dept::class,'dept_id','dept_id');
+    }
+
+    public function issue_report()
+    {
+        return $this->hasMany(Issue_report::class, 'report_id', 'report_id');
     }
 
     public function hazardLevel(){

@@ -15,8 +15,18 @@ class Employees extends Model
         'lastname',
         'dept_id'];
 
+    public function employee()
+    {
+        return $this->hasMany(Employees::class,'emp_id','emp_id');
+    }
+
     public function dept(){
         return $this->belongsTo(Dept::class,'dept_id','dept_id');
+    }
+
+    public function safeties()
+    {
+        return $this->hasMany(Issue_report::class, 'emp_id', 'emp_id');
     }
 
     public function getFullNameAttribute()

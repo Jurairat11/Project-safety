@@ -15,7 +15,10 @@ return new class extends Migration
             $table->id('prob_id');
             $table->string('prob_desc');
             $table->foreignId('emp_id')->constrained('employees','emp_id')->onDelete('cascade');
-            $table->enum('status',['success','pending','canceled'])->default('pending');
+            $table->string('pic_before')->nullable();
+            $table->string('location')->nullable();
+            $table->foreignId('linked_report_id')->nullable()->constrained('issue_reports', 'report_id')->onDelete('set null');
+            $table->enum('status', ['new', 'reported', 'dismissed'])->default('new');
             $table->timestamps();
         });
     }

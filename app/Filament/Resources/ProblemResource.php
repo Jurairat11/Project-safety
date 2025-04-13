@@ -16,7 +16,9 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\Select;
+use Filament\Forms\Components\FileUpload;
 use App\Models\Employees;
+use App\Models\Issue_report;
 
 class ProblemResource extends Resource
 {
@@ -33,32 +35,55 @@ class ProblemResource extends Resource
         return $form
             ->schema([
 
-                Forms\Components\Select::make('emp_id')
-                    ->label('Reporting employee')
-                    ->options(
-                        Employees::all()->mapWithKeys(function ($employee) {
-                            return [
-                                $employee->emp_id => "{$employee->emp_id} - {$employee->emp_name} {$employee->lastname}"
-                            ];
-                        })
-                    )
-                    ->searchable()
+                Select::make('emp_id')
+                            ->label('Reported by')
+                            ->options(function () {
+                                return \App\Models\Employees::all()->mapWithKeys(function ($employee) {
+                                    return [$employee->emp_id => $employee->full_name];
+                                });
+                            })
+                            ->searchable()
+                            ->required()
+                            ->getSearchResultsUsing(function (string $query) {
+                                return \App\Models\Employees::where('emp_id', 'like', "%{$query}%")
+                                    ->orWhere('full_name', 'like', "%{$query}%")
+                                    ->get()
+                                    ->mapWithKeys(function ($employee) {
+                                        return [$employee->emp_id => $employee->full_name];
+                                    });
+                            })
+                            ->placeholder("Select reported person"),
+
+                Textarea::make('prob_desc')
+                    ->label('Description')
                     ->required(),
 
-                Forms\Components\Select::make('status')
+                FileUpload::make('pic_before')
+                    ->label('Picture')
+                    ->image()
+                    ->directory('form-attachments')
+                    ->visibility('public'),
+
+                TextInput::make('location')
+                    ->label('Location')
+                    ->required(),
+
+                Select::make('linked_report_id')
+                    ->label('Connect Issue Report')
+                    ->options(Issue_report::all()->pluck('id', 'id'))
+                    ->searchable()
+                    ->nullable(),
+
+                Select::make('status')
                     ->label('Status')
                     ->options([
-                        'pending' => 'Pending',
-                        'success' => 'Success',
-                        'canceled' => 'Canceled',
+                        'new' => 'New',
+                        'reported' => 'Reported',
+                        'dismissed' => 'Dismissed',
                     ])
-                    ->default('pending')
-                    ->required(),
-
-                Forms\Components\MarkdownEditor::make('prob_desc')
-                    ->label('Incident details')
-                    ->required()
-                    ->columnSpan(2),
+                    ->default('new')
+                    ->disabled() // หากให้ระบบเปลี่ยนสถานะเอง
+                    ->dehydrated(false), // ไม่ส่งกลับถ้า disabled
             ]);
     }
 
