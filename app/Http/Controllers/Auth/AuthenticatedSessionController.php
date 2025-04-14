@@ -8,6 +8,8 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\View\View;
+use Illuminate\Validation\ValidationException;
+use App\Providers\RouteServiceProvider;
 
 class AuthenticatedSessionController extends Controller
 {
@@ -22,19 +24,23 @@ class AuthenticatedSessionController extends Controller
     /**
      * Handle an incoming authentication request.
      */
-    public function store(LoginRequest $request): RedirectResponse
+    public function store(Request $request): RedirectResponse
 {
-    $credentials = $request->only('emp_id', 'password');
+    $request->validate([
+        'emp_id' => ['required', 'string'],
+        'password' => ['required'],
+    ]);
 
-    if (Auth::attempt($credentials, $request->boolean('remember'))) {
-        $request->session()->regenerate();
-
-        return redirect()->intended(RouteServiceProvider::HOME);
+    if (! Auth::attempt(['emp_id' => $request->emp_id, 'password' => $request->password], $request->boolean('remember'))) {
+        throw ValidationException::withMessages([
+            'emp_id' => __('auth.failed'),
+        ]);
     }
 
-    return back()->withErrors([
-        'emp_id' => 'ข้อมูลไม่ถูกต้อง',
-    ]);
+    $request->session()->regenerate();
+
+    return redirect()->intended(RouteServiceProvider::HOME);
+
 }
 
     /**

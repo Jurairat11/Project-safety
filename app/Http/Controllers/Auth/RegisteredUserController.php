@@ -46,12 +46,14 @@ class RegisteredUserController extends Controller
             'dept_id' => $request->dept_id,
             'email' => $request->email,
             'password' => Hash::make($request->password),
+            'role' => 'employee',
         ]);
 
         event(new Registered($user));
 
         Auth::login($user);
 
-        return redirect(route('dashboard', absolute: false));
+        return redirect(RouteServiceProvider::HOME);
+
     }
 }

@@ -18,7 +18,7 @@ class User extends Authenticatable
      * @var list<string>
      */
     protected $fillable = [
-    'email', 'password', 'emp_id', 'dept_id' ,'emp_name','lastname',
+    'email', 'password', 'emp_id', 'dept_id' ,'emp_name','lastname','role',
     ];
 
     /**
@@ -42,6 +42,27 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
         ];
+    }
+
+    public function getFilamentName(): string
+    {
+        return trim(($this->emp_name ?? '') . ' ' . ($this->lastname ?? ''));
+    }
+
+    public function getNameAttribute(): string
+    {
+        return trim(($this->emp_name ?? '') . ' ' . ($this->lastname ?? ''));
+    }
+
+    public function getRoleLabel(): string
+    {
+        return match($this->role) {
+            'admin' => 'Administrator',
+            'safety' => 'Safety Officer',
+            'department' => 'Department',
+            'employee' => 'Employee',
+            default => 'Unknown',
+        };
     }
 
 

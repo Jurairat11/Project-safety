@@ -1,79 +1,84 @@
-<x-guest-layout>
-    <x-auth-card>
-        <x-slot name="logo">
-            <a href="/">
-                <x-application-logo class="w-20 h-20 text-gray-500 fill-current" />
-            </a>
-        </x-slot>
+<!DOCTYPE html>
+<html lang="en">
 
-        <x-auth-validation-errors class="mb-4" :errors="$errors" />
+<head>
+    <meta charset="UTF-8">
+    <title>Register</title>
+    @vite('resources/css/app.css')
+</head>
 
-        <form method="POST" action="{{ route('register') }}">
+<body class="flex items-center justify-center min-h-screen bg-gray-50 dark:bg-gray-900">
+    <div class="w-full max-w-md p-8 bg-white shadow rounded-xl dark:bg-gray-800">
+        <h2 class="mb-6 text-2xl font-bold text-center text-gray-800 dark:text-white">
+            Create your account
+        </h2>
+
+        <form method="POST" action="{{ route('register') }}" class="space-y-4">
             @csrf
 
-            <!-- First Name -->
             <div>
-                <x-input-label for="emp_name" :value="__('First Name')" />
-                <x-text-input id="emp_name" class="block w-full mt-1" type="text" name="emp_name" :value="old('emp_name')"
-                    required autofocus />
+                <label for="emp_name" class="block text-sm font-medium text-gray-700 dark:text-gray-300">First
+                    Name</label>
+                <input id="emp_name" name="emp_name" type="text" required value="{{ old('emp_name') }}"
+                    class="block w-full mt-1 border-gray-300 rounded-md shadow-sm dark:bg-gray-700 dark:text-white">
             </div>
 
-            <!-- Last Name -->
-            <div class="mt-4">
-                <x-input-label for="lastname" :value="__('Last Name')" />
-                <x-text-input id="lastname" class="block w-full mt-1" type="text" name="lastname" :value="old('lastname')"
-                    required />
+            <div>
+                <label for="lastname" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Last
+                    Name</label>
+                <input id="lastname" name="lastname" type="text" required value="{{ old('lastname') }}"
+                    class="block w-full mt-1 border-gray-300 rounded-md shadow-sm dark:bg-gray-700 dark:text-white">
             </div>
 
-            <!-- Employee ID -->
-            <div class="mt-4">
-                <x-input-label for="emp_id" :value="__('Employee ID')" />
-                <x-text-input id="emp_id" class="block w-full mt-1" type="text" name="emp_id" :value="old('emp_id')"
-                    required />
+            <div>
+                <label for="emp_id" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Employee
+                    ID</label>
+                <input id="emp_id" name="emp_id" type="text" required value="{{ old('emp_id') }}"
+                    class="block w-full mt-1 border-gray-300 rounded-md shadow-sm dark:bg-gray-700 dark:text-white">
             </div>
 
-            <!-- Department -->
-            <div class="mt-4">
-                <x-input-label for="dept_id" :value="__('Department')" />
-                <select name="dept_id" id="dept_id" class="block w-full mt-1 border-gray-300 rounded-md shadow-sm"
-                    required>
-                    <option value="">-- Select Department --</option>
-                    @foreach (App\Models\Dept::all() as $dept)
-                        <option value="{{ $dept->dept_id }}">{{ $dept->dept_name }}</option>
+            <div>
+                <label for="dept_id"
+                    class="block text-sm font-medium text-gray-700 dark:text-gray-300">Department</label>
+                <select id="dept_id" name="dept_id" required
+                    class="block w-full mt-1 border-gray-300 rounded-md shadow-sm dark:bg-gray-700 dark:text-white">
+                    <option value="">Select Department</option>
+                    @foreach (\App\Models\Dept::all() as $dept)
+                        <option value="{{ $dept->id }}">{{ $dept->dept_name }}</option>
                     @endforeach
                 </select>
             </div>
 
-            <!-- Email Address -->
-            <div class="mt-4">
-                <x-input-label for="email" :value="__('Email')" />
-                <x-text-input id="email" class="block w-full mt-1" type="email" name="email" :value="old('email')"
-                    required />
+            <div>
+                <label for="email" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Email</label>
+                <input id="email" name="email" type="email" required value="{{ old('email') }}"
+                    class="block w-full mt-1 border-gray-300 rounded-md shadow-sm dark:bg-gray-700 dark:text-white">
             </div>
 
-            <!-- Password -->
-            <div class="mt-4">
-                <x-input-label for="password" :value="__('Password')" />
-                <x-text-input id="password" class="block w-full mt-1" type="password" name="password" required
-                    autocomplete="new-password" />
+            <div>
+                <label for="password"
+                    class="block text-sm font-medium text-gray-700 dark:text-gray-300">Password</label>
+                <input id="password" name="password" type="password" required
+                    class="block w-full mt-1 border-gray-300 rounded-md shadow-sm dark:bg-gray-700 dark:text-white">
             </div>
 
-            <!-- Confirm Password -->
-            <div class="mt-4">
-                <x-input-label for="password_confirmation" :value="__('Confirm Password')" />
-                <x-text-input id="password_confirmation" class="block w-full mt-1" type="password"
-                    name="password_confirmation" required />
+            <div>
+                <label for="password_confirmation"
+                    class="block text-sm font-medium text-gray-700 dark:text-gray-300">Confirm Password</label>
+                <input id="password_confirmation" name="password_confirmation" type="password" required
+                    class="block w-full mt-1 border-gray-300 rounded-md shadow-sm dark:bg-gray-700 dark:text-white">
             </div>
 
-            <div class="flex items-center justify-end mt-4">
-                <a class="text-sm text-gray-600 underline hover:text-gray-900" href="{{ route('login') }}">
-                    {{ __('Already registered?') }}
-                </a>
-
-                <x-primary-button class="ml-4">
-                    {{ __('Register') }}
-                </x-primary-button>
+            <div class="flex items-center justify-between">
+                <a href="{{ route('login') }}" class="text-sm text-blue-600 hover:underline">Already have an
+                    account?</a>
+                <button type="submit"
+                    class="inline-flex items-center px-4 py-2 text-sm font-medium text-white transition bg-blue-600 rounded-md hover:bg-blue-700">
+                    Register
+                </button>
             </div>
         </form>
-    </x-auth-card>
-</x-guest-layout>
+    </div>
+</body>
+
+</html>
