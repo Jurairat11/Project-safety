@@ -5,6 +5,7 @@ namespace App\Filament\Resources;
 use App\Filament\Resources\EmployeesResource\Pages;
 use App\Filament\Resources\EmployeesResource\RelationManagers;
 use App\Models\Employees;
+use App\Models\Dept;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
@@ -61,7 +62,15 @@ class EmployeesResource extends Resource
 
             ])
             ->filters([
-                //
+                Tables\Filters\SelectFilter::make('dept_id')
+                ->label('Department')
+                ->options(
+                    Dept::all()->pluck('dept_name', 'dept_id') // หรือ 'id' แล้วแต่ชื่อ field
+                )
+                ->searchable()
+                ->visible(fn () => auth()->user()->role === 'admin' || auth()->user()->role === 'safety')
+                ->default(null),
+
             ])
             ->actions([
                 Tables\Actions\EditAction::make(),
@@ -89,4 +98,28 @@ class EmployeesResource extends Resource
             'edit' => Pages\EditEmployees::route('/{record}/edit'),
         ];
     }
+
+    public static function getEloquentQuery(): Builder
+{
+    $query = parent::getEloquentQuery();
+
+    if (auth()->user()?->role === 'safety') {
+        return $query->whereHas('user', fn ($q) =>
+            $q->where('role', '!=', 'admin')
+        );
+    }
+
+    return $query->where('dept_id', auth()->user()?->dept_id);
+}
+    public static function canViewAny(): bool
+    {
+        return auth()->user()?->role === 'employee';
+    }
+
+    public static function shouldRegisterNavigation(): bool
+    {
+        return auth()->user()?->role === 'employee';
+    }
+
+
 }

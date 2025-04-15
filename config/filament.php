@@ -99,11 +99,19 @@ return [
     'system_route_prefix' => 'filament',
 
     'auth' => [
-    'guard' => 'web',
+        'guard' => 'web',
 
-    'user_model' => App\Models\User::class,
-],
+        'user_model' => App\Models\User::class,
+
+        'login' => [
+            'column' => 'emp_id',
+            'route' => 'login',
+        ],
+
+        'logout' => [
+        'redirect_url' => '/login',
+    ],
 
     'home_url' => '/admin/redirect',
-
+    ],
 ];

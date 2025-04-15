@@ -75,4 +75,15 @@ class HazardLevelResource extends Resource
             'edit' => Pages\EditHazardLevel::route('/{record}/edit'),
         ];
     }
+
+    public static function canViewAny(): bool
+    {
+        return auth()->user()?->role !== 'employee';
+    }
+
+    public static function shouldRegisterNavigation(): bool
+    {
+        return auth()->user()?->role !== 'employee';
+    }
+
 }

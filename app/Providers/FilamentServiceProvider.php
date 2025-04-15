@@ -3,6 +3,8 @@
 namespace App\Providers;
 
 use Illuminate\Support\ServiceProvider;
+use Filament\Facades\Filament;
+
 
 class FilamentServiceProvider extends ServiceProvider
 {
@@ -20,5 +22,6 @@ class FilamentServiceProvider extends ServiceProvider
     public function boot(): void
     {
         //
+
     }
 }

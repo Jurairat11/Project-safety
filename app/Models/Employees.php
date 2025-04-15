@@ -31,6 +31,12 @@ class Employees extends Model
 
     public function getFullNameAttribute()
     {
-        return "{$this->emp_name} {$this->lastname}";
+        return "{$this->emp_id} - {$this->emp_name} {$this->lastname}";
     }
+
+    public function user()
+    {
+        return $this->hasOne(User::class, 'emp_id', 'emp_id');
+    }
+
 }

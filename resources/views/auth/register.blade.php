@@ -13,6 +13,17 @@
             Create your account
         </h2>
 
+        @if ($errors->any())
+            <div class="p-2 mb-4 text-sm text-red-600 bg-red-100 rounded">
+                <ul class="list-disc list-inside">
+                    @foreach ($errors->all() as $error)
+                        <li>{{ $error }}</li>
+                    @endforeach
+                </ul>
+            </div>
+        @endif
+
+
         <form method="POST" action="{{ route('register') }}" class="space-y-4">
             @csrf
 
@@ -44,7 +55,7 @@
                     class="block w-full mt-1 border-gray-300 rounded-md shadow-sm dark:bg-gray-700 dark:text-white">
                     <option value="">Select Department</option>
                     @foreach (\App\Models\Dept::all() as $dept)
-                        <option value="{{ $dept->id }}">{{ $dept->dept_name }}</option>
+                        <option value="{{ $dept->dept_id }}">{{ $dept->dept_name }}</option>
                     @endforeach
                 </select>
             </div>

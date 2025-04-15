@@ -64,6 +64,16 @@ class User extends Authenticatable
             default => 'Unknown',
         };
     }
+    public function employee()
+    {
+        return $this->belongsTo(Employees::class, 'emp_id', 'emp_id');
+    }
+
+    public function department()
+    {
+        return $this->belongsTo(\App\Models\Dept::class, 'dept_id', 'dept_id');
+    }
+
 
 
 }

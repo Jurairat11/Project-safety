@@ -71,4 +71,15 @@ class HazardTypeResource extends Resource
             'edit' => Pages\EditHazardType::route('/{record}/edit'),
         ];
     }
+
+    public static function canViewAny(): bool
+    {
+        return auth()->user()?->role !== 'employee';
+    }
+
+    public static function shouldRegisterNavigation(): bool
+    {
+        return auth()->user()?->role !== 'employee';
+    }
+
 }

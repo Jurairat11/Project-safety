@@ -30,40 +30,41 @@ class IssueReportResource extends Resource
         return $form
             ->schema([
                 Forms\Components\Fieldset::make('prob_id')
-                ->label('P-CAR Details')
-                ->schema([
-                    Forms\Components\Select::make('prob_id')
-                        ->label('Problem ID')
-                        ->relationship('problem','prob_id')
-                        ->options(function () {
-                            return \App\Models\Problem::all()->pluck('prob_id', 'prob_id');
-                        })
-                        ->reactive()
-                        ->afterStateUpdated(function (callable $set, $state) {
-                            $problem = \App\Models\Problem::find($state);
+                    ->label('P-CAR Details')
+                    ->schema([
+                        Forms\Components\Select::make('prob_id')
+                            ->label('Problem ID')
+                            ->relationship('problem', 'prob_id')
+                            ->options(function () {
+                                return \App\Models\Problem::all()->pluck('prob_id', 'prob_id');
+                            })
+                            ->default(fn () => request()->get('prob_id')) // ✅ รับค่าจาก URL
+                            ->reactive()
+                            ->afterStateHydrated(function ($state, callable $set) {
+                                $problem = \App\Models\Problem::find($state);
 
-                            if ($problem) {
-                                $set('prob_desc', $problem->prob_desc);
-                                $set('emp_id', $problem->emp_id);
+                                if ($problem) {
+                                    $set('prob_desc', $problem->prob_desc);
+                                    $set('emp_id', $problem->emp_id);
 
-                                // ดึงพนักงาน
-                                $employee = \App\Models\Employees::where('emp_id', $problem->emp_id)->first();
-                                if ($employee && $employee->dept_id) {
-                                    $set('dept_id', $employee->dept_id); // เซ็ตค่า dept_id
+                                    $employee = \App\Models\Employees::where('emp_id', $problem->emp_id)->first();
+                                    if ($employee && $employee->dept_id) {
+                                        $set('dept_id', $employee->dept_id);
+                                    }
                                 }
-                            }
-                        })
-                        ->required(),
+                            })
+                            ->required(),
 
-                    Forms\Components\TextInput::make('emp_id')
-                        ->label('Reporting employee'),
+                        Forms\Components\TextInput::make('emp_id')
+                            ->label('Reporting employee'),
 
-                    Forms\Components\Select::make('dept_id')
-                        ->label('Reporter Department')
-                        ->relationship('dept','dept_name'),
+                        Forms\Components\Select::make('dept_id')
+                            ->label('Reporter Department')
+                            ->relationship('dept', 'dept_name'),
 
-                    Forms\Components\Textarea::make('prob_desc')
-                        ->label('Description'),
+                        Forms\Components\Textarea::make('prob_desc')
+                            ->label('Description')
+                        ]),
 
                     Forms\Components\Fieldset::make('Issue Report')
                     ->schema([
@@ -103,7 +104,6 @@ class IssueReportResource extends Resource
                     ])->columns(2),
 
 
-                ]),
             ]);
     }
 
@@ -159,4 +159,25 @@ class IssueReportResource extends Resource
             'edit' => Pages\EditIssueReport::route('/{record}/edit'),
         ];
     }
+
+    public static function afterCreate($record): void
+    {
+        if ($record->prob_id) {
+            \App\Models\Problem::where('prob_id', $record->prob_id)
+                ->update(['status' => 'reported']);
+        }
+    }
+
+
+    public static function canViewAny(): bool
+    {
+        return auth()->user()?->role !== 'employee';
+    }
+
+    public static function shouldRegisterNavigation(): bool
+    {
+        return auth()->user()?->role !== 'employee';
+    }
+
+
 }

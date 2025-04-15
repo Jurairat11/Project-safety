@@ -19,7 +19,9 @@ use Filament\Forms\Components\Select;
 use Filament\Forms\Components\FileUpload;
 use App\Models\Employees;
 use App\Models\Issue_report;
-use App\Models\Dept;
+use App\Models\User;
+use App\Notifications\NewProblemReported;
+
 
 class ProblemResource extends Resource
 {
@@ -35,20 +37,13 @@ class ProblemResource extends Resource
                 Select::make('emp_id')
                     ->label('Reported by')
                     ->options(fn () => \App\Models\Employees::all()->pluck('full_name', 'emp_id'))
-                    ->searchable()
-                    ->required()
-                    ->reactive()
-                    ->afterStateUpdated(function ($state, callable $set) {
-                        $employee = \App\Models\Employees::where('emp_id', $state)->first();
-                        if ($employee && $employee->dept_id) {
-                            $set('dept_id', $employee->dept_id); // เซ็ตค่าจากพนักงาน
-                        }
-                    }),
+                    ->default(auth()->user()?->emp_id),
+
 
                 Select::make('dept_id')
                     ->label('Department')
                     ->options(fn () => \App\Models\Dept::all()->pluck('dept_name', 'dept_id'))
-                    ->required(),
+                    ->default(fn () => auth()->user()?->dept_id),
 
                 Textarea::make('prob_desc')
                     ->label('Description')
@@ -93,6 +88,10 @@ class ProblemResource extends Resource
                     ->label('Reported by')
                     ->searchable()
                     ->sortable(),
+                Tables\Columns\TextColumn::make('dept.dept_name')
+                    ->label('Department'),
+                Tables\Columns\ImageColumn::make('pic_before')
+                    ->label('Picture'),
                 Tables\Columns\TextColumn::make('status')
                     ->label('Status')
                     ->badge(),
@@ -104,7 +103,9 @@ class ProblemResource extends Resource
                 //
             ])
             ->actions([
+                Tables\Actions\ViewAction::make(),
                 Tables\Actions\EditAction::make(),
+                Tables\Actions\DeleteAction::make(),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
@@ -126,6 +127,24 @@ class ProblemResource extends Resource
             'index' => Pages\ListProblems::route('/'),
             'create' => Pages\CreateProblem::route('/create'),
             'edit' => Pages\EditProblem::route('/{record}/edit'),
+            'view' => Pages\ViewProblem::route('/{record}')
         ];
     }
+
+
+    public static function canViewAny(): bool
+    {
+        return in_array(auth()->user()->role, ['employee','safety', 'admin']);
+    }
+
+
+    public static function shouldRegisterNavigation(): bool
+    {
+        return auth()->user()?->role === 'employee';
+    }
+
+
+
+
+
 }
