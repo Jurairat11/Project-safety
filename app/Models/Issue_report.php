@@ -14,6 +14,7 @@ class Issue_report extends Model
         'report_id',
         'prob_id',
         'prob_desc',
+        'issue_desc',
         'hazard_level_id',
         'hazard_type_id',
         'img_before',

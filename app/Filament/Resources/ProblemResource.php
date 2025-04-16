@@ -70,11 +70,6 @@ class ProblemResource extends Resource
                     ->disabled() // หากให้ระบบเปลี่ยนสถานะเอง
                     ->dehydrated(false), // ไม่ส่งกลับถ้า disabled
 
-                Select::make('linked_report_id')
-                    ->label('Connect Issue Report')
-                    ->options(Issue_report::all()->pluck('id', 'id'))
-                    ->searchable()
-                    ->nullable(),
             ]);
     }
 

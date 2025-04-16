@@ -14,6 +14,8 @@ use Filament\Tables\Table;
 use App\Models\Problem;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
+use Filament\Resources\Pages\CreateRecord;
+use Illuminate\Database\Eloquent\Model;
 
 class IssueReportResource extends Resource
 {
@@ -35,39 +37,95 @@ class IssueReportResource extends Resource
                         Forms\Components\Select::make('prob_id')
                             ->label('Problem ID')
                             ->relationship('problem', 'prob_id')
-                            ->options(function () {
-                                return \App\Models\Problem::all()->pluck('prob_id', 'prob_id');
-                            })
-                            ->default(fn () => request()->get('prob_id')) // ✅ รับค่าจาก URL
+                            ->options(fn () => \App\Models\Problem::pluck('prob_id', 'prob_id'))
+                            ->default(fn () => request()->get('prob_id')) // ✅ ดึงจาก URL
                             ->reactive()
+                            ->dehydrated(true) //เพิ่มบรรทัดนี้
                             ->afterStateHydrated(function ($state, callable $set) {
-                                $problem = \App\Models\Problem::find($state);
+                                if ($state) {
+                                    $problem = \App\Models\Problem::find($state);
 
-                                if ($problem) {
-                                    $set('prob_desc', $problem->prob_desc);
-                                    $set('emp_id', $problem->emp_id);
+                                    if ($problem) {
+                                        $set('prob_desc', $problem->prob_desc);
+                                        $set('emp_id', $problem->emp_id);
 
-                                    $employee = \App\Models\Employees::where('emp_id', $problem->emp_id)->first();
-                                    if ($employee && $employee->dept_id) {
-                                        $set('dept_id', $employee->dept_id);
+                                        $employee = \App\Models\Employees::where('emp_id', $problem->emp_id)->first();
+                                        if ($employee && $employee->dept_id) {
+                                            $set('dept_id', $employee->dept_id);
+                                        }
                                     }
                                 }
                             })
-                            ->required(),
+                            ->afterStateUpdated(function ($state, callable $set) {
+                                if ($state) {
+                                    $problem = \App\Models\Problem::find($state);
 
-                        Forms\Components\TextInput::make('emp_id')
-                            ->label('Reporting employee'),
+                                    if ($problem) {
+                                        $set('prob_desc', $problem->prob_desc);
+                                        $set('emp_id', $problem->emp_id);
 
-                        Forms\Components\Select::make('dept_id')
-                            ->label('Reporter Department')
-                            ->relationship('dept', 'dept_name'),
+                                        $employee = \App\Models\Employees::where('emp_id', $problem->emp_id)->first();
+                                        if ($employee && $employee->dept_id) {
+                                            $set('dept_id', $employee->dept_id);
+                                        }
+                                    }
+                                }
+                            }),
 
-                        Forms\Components\Textarea::make('prob_desc')
-                            ->label('Description')
+
+                            Forms\Components\TextInput::make('emp_id')
+                            ->label('Reporting employee')
+                            ->default(function () {
+                                $probId = request()->get('prob_id');
+                                if ($probId) {
+                                    $problem = \App\Models\Problem::find($probId);
+                                    return $problem?->emp_id;
+                                }
+                                return null;
+                            })
+                            ->disabled()
+                            ->dehydrated(true),
+
+                            Forms\Components\Select::make('dept_id')
+                                ->label('Reporter Department')
+                                ->options(fn () => \App\Models\Dept::pluck('dept_name', 'dept_id'))
+                                ->default(function () {
+                                    $probId = request()->get('prob_id');
+                                    if ($probId) {
+                                        $problem = \App\Models\Problem::find($probId);
+                                        $emp = \App\Models\Employees::where('emp_id', $problem?->emp_id)->first();
+                                        return $emp?->dept_id;
+                                    }
+                                    return null;
+                                })
+                                ->disabled()
+                                ->dehydrated(true),
+
+                            Forms\Components\Textarea::make('prob_desc')
+                                ->label('Description')
+                                ->default(function () {
+                                    $probId = request()->get('prob_id');
+                                    if ($probId) {
+                                        $problem = \App\Models\Problem::find($probId);
+                                        return $problem?->prob_desc;
+                                    }
+                                    return null;
+                                })
+                                ->disabled()
+                                ->dehydrated(true),
+
                         ]),
 
                     Forms\Components\Fieldset::make('Issue Report')
                     ->schema([
+
+                        Forms\Components\Textarea::make('issue_desc')
+                        ->label('Issue Description')
+                        ->placeholder('Describe the issue')
+                        ->rows(4)
+                        ->columnSpanFull()
+                        ->nullable(),
+
                         Forms\Components\Select::make('hazard_level_id')
                         ->label('Hazard Level')
                         ->relationship('hazardLevel','Level')
@@ -86,7 +144,8 @@ class IssueReportResource extends Resource
                             'resolved' => 'Resolved',
                             'closed' =>'Closed'
                         ])
-                        ->default('pending')
+                        ->default('reported')
+                        ->hidden()// ซ่อน field
                         ->required(),
 
                     Forms\Components\FileUpload::make('img_before')
@@ -135,7 +194,9 @@ class IssueReportResource extends Resource
                 //
             ])
             ->actions([
+                Tables\Actions\ViewAction::make(),
                 Tables\Actions\EditAction::make(),
+                Tables\Actions\DeleteAction::make(),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
@@ -157,19 +218,11 @@ class IssueReportResource extends Resource
             'index' => Pages\ListIssueReports::route('/'),
             'create' => Pages\CreateIssueReport::route('/create'),
             'edit' => Pages\EditIssueReport::route('/{record}/edit'),
+            'view' => Pages\ViewIssueReport::route('/{record}'),
         ];
     }
 
-    public static function afterCreate($record): void
-    {
-        if ($record->prob_id) {
-            \App\Models\Problem::where('prob_id', $record->prob_id)
-                ->update(['status' => 'reported']);
-        }
-    }
-
-
-    public static function canViewAny(): bool
+        public static function canViewAny(): bool
     {
         return auth()->user()?->role !== 'employee';
     }

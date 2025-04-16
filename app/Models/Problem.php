@@ -21,6 +21,10 @@ class Problem extends Model
         'status'
     ];
 
+    protected $attributes = [
+        'status' => 'new',
+    ];
+
     public function employee() {
         return $this->belongsTo(Employees::class, 'emp_id', 'emp_id');
     }
@@ -33,6 +37,12 @@ class Problem extends Model
     public function dept() {
         return $this->belongsTo(Dept::class, 'dept_id', 'dept_id');
     }
+
+    public function issueReports()
+{
+    return $this->hasMany(Issue_report::class, 'prob_id', 'prob_id');
+}
+
 
 
 

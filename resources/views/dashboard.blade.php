@@ -1,17 +1,14 @@
-<x-app-layout>
-    <x-slot name="header">
-        <h2 class="text-xl font-semibold leading-tight text-gray-800 dark:text-gray-200">
-            {{ __('Dashboard') }}
-        </h2>
-    </x-slot>
-
-    <div class="py-12">
-        <div class="mx-auto max-w-7xl sm:px-6 lg:px-8">
-            <div class="overflow-hidden bg-white shadow-sm dark:bg-gray-800 sm:rounded-lg">
-                <div class="p-6 text-gray-900 dark:text-gray-100">
-                    {{ __("You're logged in!") }}
-                </div>
-            </div>
-        </div>
+@if (auth()->user()->unreadNotifications->count())
+    <div class="p-4 mb-4 bg-yellow-100 rounded shadow">
+        <h3 class="mb-2 text-lg font-bold">Notifications</h3>
+        <ul class="space-y-2">
+            @foreach (auth()->user()->unreadNotifications as $notification)
+                <li class="p-2 bg-white rounded shadow">
+                    <div class="font-semibold">{{ $notification->data['title'] }}</div>
+                    <div class="text-sm">{{ $notification->data['message'] }}</div>
+                    <a href="{{ $notification->data['url'] }}" class="text-sm text-blue-500">View</a>
+                </li>
+            @endforeach
+        </ul>
     </div>
-</x-app-layout>
+@endif
