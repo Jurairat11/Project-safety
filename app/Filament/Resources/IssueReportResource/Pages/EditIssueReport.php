@@ -16,4 +16,10 @@ class EditIssueReport extends EditRecord
             Actions\DeleteAction::make(),
         ];
     }
+
+    public static function afterUpdate($record): void
+    {
+        \App\Models\Problem::where('prob_id', $record->prob_id)
+            ->update(['status' => $record->status]);
+    }
 }

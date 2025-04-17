@@ -158,7 +158,13 @@ class IssueReportResource extends Resource
                         ->options(Dept::all()->pluck('dept_name', 'dept_id'))
                         ->searchable()
                         ->placeholder('Select responsible department')
-                        ->required(), // หากจำเป็นต้องกรอก
+                        ->required(),
+
+                    Forms\Components\TextInput::make('created_by')
+                        ->label('Created By')
+                        ->default(fn () => auth()->user()?->emp_id)
+                        ->disabled()
+                        ->dehydrated(true), // ให้ส่งค่าลง DB ด้วย ถึงแม้ disabled
 
                     ])->columns(2),
 
@@ -172,23 +178,21 @@ class IssueReportResource extends Resource
             ->columns([
                 Tables\Columns\TextColumn::make('problem.prob_id')
                     ->label('Problem_ID'),
-                Tables\Columns\TextColumn::make('problem.emp_id')
-                    ->label('Reporter'),
-                Tables\Columns\TextColumn::make('problem.prob_desc')
-                    ->label('Description'),
+                Tables\Columns\ImageColumn::make('img_before')
+                    ->label('Picture Before'),
                 Tables\Columns\TextColumn::make('hazardLevel.Level')
                     ->label('Hazard Level'),
                 Tables\Columns\TextColumn::make('hazardType.Desc')
                     ->label('Hazard Type')
                     ->sortable()
                     ->searchable(),
-                Tables\Columns\ImageColumn::make('img_before')
-                    ->label('Picture Before'),
                 Tables\Columns\TextColumn::make('dept.dept_name')
                     ->label('Department'),
                 Tables\Columns\TextColumn::make('status')
                     ->label('Status')
                     ->badge(),
+                Tables\Columns\TextColumn::make('created_by')
+                    ->label('Created By'),
             ])
             ->filters([
                 //
@@ -222,6 +226,10 @@ class IssueReportResource extends Resource
         ];
     }
 
+    public static function beforeCreate($data): void
+    {
+        $data['created_by'] = auth()->user()?->emp_id;
+    }
         public static function canViewAny(): bool
     {
         return auth()->user()?->role !== 'employee';

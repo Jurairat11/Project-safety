@@ -9,6 +9,7 @@ use Filament\Forms\Components\Section;
 use Filament\Forms\Form;
 use Filament\Forms\Components\View;
 
+
 class ViewProblem extends ViewRecord
 {
     protected static string $resource = ProblemResource::class;
@@ -43,15 +44,18 @@ class ViewProblem extends ViewRecord
                             ->label('Location')
                             ->content(fn ($record) => $record->location),
 
-                        Placeholder::make('status')
+                            Placeholder::make('status')
                             ->label('Status')
                             ->content(fn ($record) => match ($record->status) {
                                 'new' => '🟡 New',
                                 'reported' => '🔵 Reported',
+                                'in_progress' => '🟠 In Progress',
+                                'resolved' => '✅ Resolved',
                                 'dismissed' => '🔴 Dismissed',
                                 default => 'Unknown',
                             })
                             ->extraAttributes(['class' => 'text-sm font-medium text-gray-800']),
+
 
 
                             View::make('components.problem-view-image')

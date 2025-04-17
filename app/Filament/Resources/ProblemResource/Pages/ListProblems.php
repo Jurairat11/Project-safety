@@ -5,6 +5,8 @@ namespace App\Filament\Resources\ProblemResource\Pages;
 use App\Filament\Resources\ProblemResource;
 use Filament\Actions;
 use Filament\Resources\Pages\ListRecords;
+use App\Models\Problem;
+use Illuminate\Database\Eloquent\Builder;
 
 class ListProblems extends ListRecords
 {
@@ -16,4 +18,8 @@ class ListProblems extends ListRecords
             Actions\CreateAction::make(),
         ];
     }
+    protected function getTableQuery(): \Illuminate\Database\Eloquent\Builder
+        {
+            return Problem::query()->latest(); // ← เรียงจากรายการล่าสุด
+        }
 }

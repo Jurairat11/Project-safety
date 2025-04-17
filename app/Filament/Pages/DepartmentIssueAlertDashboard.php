@@ -2,6 +2,7 @@
 namespace App\Filament\Pages;
 
 use App\Models\Issue_report;
+use App\Models\Problem;
 use Filament\Pages\Page;
 use Filament\Tables;
 use Filament\Tables\Columns\TextColumn;
@@ -30,6 +31,7 @@ class DepartmentIssueAlertDashboard extends Page implements Tables\Contracts\Has
         return [
             TextColumn::make('report_id')->label('Issue ID'),
             TextColumn::make('issue_desc')->label('Issue Desc'),
+            TextColumn::make('created_by')->label('Created By'),
 
             BadgeColumn::make('status')
                 ->label('Status')
@@ -48,7 +50,9 @@ class DepartmentIssueAlertDashboard extends Page implements Tables\Contracts\Has
                     'dismissed' => 'Dismissed',
                     default => ucfirst($state),
                 }),
-            TextColumn::make('created_at')->since(),
+            TextColumn::make('created_at')
+            ->label('Created At')
+            ->since(),
         ];
     }
 
@@ -64,22 +68,36 @@ class DepartmentIssueAlertDashboard extends Page implements Tables\Contracts\Has
             ->openUrlInNewTab(),
 
             Action::make('accept')
-            ->label('Accept')
-            ->icon('heroicon-o-check')
-            ->color('success')
-            ->requiresConfirmation()
-            ->visible(fn ($record) => $record->status === 'reported')
-            ->action(function ($record) {
-                // อัปเดต status ของ issue report
-                $record->update(['status' => 'In progress']);
+                ->label('Accept')
+                ->icon('heroicon-o-check')
+                ->color('success')
+                ->requiresConfirmation()
+                ->visible(fn (Issue_report $record) => $record->status === 'reported')
+                ->action(function (Issue_report $record) { $record->update(['status' => 'in_progress']);
+                    \App\Models\Problem::where('prob_id', $record->prob_id)->update(['status' => 'in_progress']);
+                    return redirect('/admin/issue-responses/create?report_id=' . $record->report_id);
+                }),
 
-                // อัปเดต status ของ problem ที่เชื่อมกับ issue report นี้
-                if ($record->prob_id) {
-                    \App\Models\Problem::where('prob_id', $record->prob_id)
-                        ->update(['status' => 'In progress']);
-                }
-            }),
+            Tables\Actions\DeleteAction::make()
+                ->label('Delete')
+                ->icon('heroicon-o-trash')
+                ->color('danger')
+                ->successNotificationTitle('issue deleted successfully')
+                ->successRedirectUrl(route('filament.admin.pages.department-issue-alert-dashboard')),
         ];
+    }
+
+    public static function getNavigationBadge(): ?string
+    {
+        // ตรวจสอบว่าผู้ใช้เป็นแผนกหรือไม่
+        if (auth()->user()->role !== 'department') {
+            return null;
+        }
+
+        // นับเฉพาะที่เป็น reported และแผนกตรงกับผู้ใช้
+        return \App\Models\Issue_report::where('status', 'reported')
+            ->where('responsible_dept_id', auth()->user()->dept_id)
+            ->count();
     }
 
     public static function canAccess(): bool

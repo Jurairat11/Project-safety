@@ -27,24 +27,41 @@ class IssueResponsesResource extends Resource
                 Forms\Components\Section::make('Issue Responses')
                 ->schema([
                     Forms\Components\Select::make('report_id')
-                        ->label('Report ID')
-                        ->relationship('issue_report','report_id')
-                        ->options(function () {
-                            return Issue_report::all()->pluck('report_id', 'report_id');
-                        })
-                        ->reactive()
-                        ->afterStateUpdated(function (callable $set, $state) {
+                    ->label('Report ID')
+                    ->relationship('issue_report', 'report_id')
+                    ->options(function () {
+                        $deptId = auth()->user()?->dept_id;
+                        return \App\Models\Issue_report::where('responsible_dept_id', $deptId)
+                            ->pluck('report_id', 'report_id');
+                    })
+                    ->default(fn () => request()->get('report_id'))
+                    ->reactive()
+                    ->required(),
 
-                            $issue_report = Issue_report::find($state);
-                            if ( $issue_report) {
+                Forms\Components\TextInput::make('safety_emp_id')
+                    ->label('Safety Officer ID')
+                    ->default(function () {
+                        $reportId = request()->get('report_id');
+                        if ($reportId) {
+                            $issue = \App\Models\Issue_report::find($reportId);
+                            return $issue?->created_by;
+                        }
+                        return null;
+                    })
+                    ->disabled()
+                    ->dehydrated(true)
+                    ->required(),
 
-                                $set('emp_id', $issue_report->emp_id);
-                            }
-                        })
+                    Forms\Components\Select::make('status')
+                        ->label('Status')
+                        ->options([
+                            'reported' => 'Reported',
+                            'in_progress' => 'In progress',
+                            'resolved' => 'Resolved',
+                        ])
+                        ->default('resolved')
+                        ->hidden()// ซ่อน field
                         ->required(),
-
-                    Forms\Components\TextInput::make('emp_id')
-                        ->label('Reporting employee'),
 
                     Forms\Components\Textarea::make('cause')
                         ->label('Cause')
@@ -55,11 +72,11 @@ class IssueResponsesResource extends Resource
                 ->schema([
 
                         Forms\Components\FileUpload::make('img_after')
-                        ->label('Picture After')
-                        ->directory('form-attachments')
-                        ->visibility('public')
-                        ->required()
-                        ->columnSpan(2),
+                            ->label('Picture After')
+                            ->directory('form-attachments')
+                            ->visibility('public')
+                            ->required()
+                            ->columnSpan(2),
 
                         Forms\Components\Textarea::make('temporary_act')
                             ->label('Temporary Action')
@@ -118,12 +135,6 @@ class IssueResponsesResource extends Resource
                             ->required()
                             ->columnSpan(2),
 
-                        /*Forms\Components\Select::make('emp_id')
-                            ->label('Created by')
-                            ->options(function(){
-                                return \App\Models\Employees::where('emp_id',1)->pluck('emp_id');
-                            }),*/
-
                         Forms\Components\Select::make('created_by')
                             ->label('Created by')
                             ->options(function () {
@@ -141,6 +152,7 @@ class IssueResponsesResource extends Resource
                                     });
                             })
                             ->required()
+                            ->default(fn () => auth()->user()?->emp_id)
                             ->placeholder("Select create person")
 
                     ]) ->columns(2)
@@ -153,17 +165,23 @@ class IssueResponsesResource extends Resource
         return $table
             ->columns([
                 Tables\Columns\TextColumn::make('response_id')
-                ->label('Response_id'),
+                    ->label('Response ID'),
                 Tables\Columns\TextColumn::make('report_id')
-                ->label('Report_id'),
-                Tables\Columns\TextColumn::make('cause')
-                ->label('Cause'),
+                    ->label('Report ID'),
+                Tables\Columns\TextColumn::make('safety_emp_id')
+                    ->label('Assign by')
+                    ->formatStateUsing(function ($state) {
+                        return \App\Models\Employees::where('emp_id', $state)->first()?->full_name ?? $state;
+                    }),
                 Tables\Columns\ImageColumn::make('img_after')
-                ->label('Picture after'),
+                    ->label('Picture after'),
+                Tables\Columns\TextColumn::make('status')
+                    ->label('Status')
+                    ->badge(),
                 Tables\Columns\TextColumn::make('created_by')
-                ->label('Created by')
-                ->searchable()
-                ->sortable(),
+                    ->label('Created by')
+                    ->searchable()
+                    ->sortable(),
 
             ])
             ->filters([
@@ -171,6 +189,7 @@ class IssueResponsesResource extends Resource
             ])
             ->actions([
                 Tables\Actions\EditAction::make(),
+                Tables\Actions\DeleteAction::make(),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([

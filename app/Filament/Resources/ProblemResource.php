@@ -81,8 +81,7 @@ class ProblemResource extends Resource
                     ->label('Problem ID'),
                 Tables\Columns\TextColumn::make('employee.full_name')
                     ->label('Reported by')
-                    ->searchable()
-                    ->sortable(),
+                    ->searchable(),
                 Tables\Columns\TextColumn::make('dept.dept_name')
                     ->label('Department'),
                 Tables\Columns\ImageColumn::make('pic_before')
@@ -91,8 +90,10 @@ class ProblemResource extends Resource
                     ->label('Status')
                     ->badge(),
                 Tables\Columns\TextColumn::make('created_at')
-                    ->label('Date reported')
-                    ->dateTime('d/m/Y H:i'),
+                    ->label('Created')
+
+                    ->sortable()
+                    ->dateTime('d/m/Y'),
             ])
             ->filters([
                 //
@@ -126,6 +127,15 @@ class ProblemResource extends Resource
         ];
     }
 
+    public static function getDefaultTableSortColumn(): ?string
+    {
+        return 'created_at';
+    }
+
+    public static function getDefaultTableSortDirection(): ?string
+    {
+        return 'desc';
+    }
 
     public static function canViewAny(): bool
     {

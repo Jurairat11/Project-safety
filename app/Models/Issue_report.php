@@ -22,6 +22,7 @@ class Issue_report extends Model
         'emp_id',
         'dept_id',
         'responsible_dept_id',
+        'created_by',
     ];
 
     public function problem(){

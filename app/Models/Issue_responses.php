@@ -12,6 +12,7 @@ class Issue_responses extends Model
     protected $fillable = [
         'response_id',
         'report_id',
+        'safety_emp_id',
         'cause',
         'img_after',
         'temporary_act',

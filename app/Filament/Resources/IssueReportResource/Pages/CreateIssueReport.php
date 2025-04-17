@@ -20,4 +20,5 @@ class CreateIssueReport extends CreateRecord
                 ->update(['status' => 'reported']);
         }
     }
+
 }

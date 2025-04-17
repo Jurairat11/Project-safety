@@ -31,19 +31,21 @@ class SafetyProblemDashboard extends Page implements Tables\Contracts\HasTable
     protected function getTableColumns(): array
     {
         return [
+            TextColumn::make('prob_id')->label('Problem ID'),
             TextColumn::make('emp_id')->label('Reported By')->searchable(),
             TextColumn::make('dept.dept_name')->label('Department'),
             TextColumn::make('prob_desc')->label('Description')->limit(50)->searchable(),
-            TextColumn::make('location')->label('Location'),
             ImageColumn::make('pic_before')->label('Before Image')->height(60),
             BadgeColumn::make('status')->colors([
                 'primary' => 'new',
                 'success' => 'reported',
+                'info' => 'in_progress',
                 'warning' => 'resolved',
                 'danger' => 'dismissed',
             ])->formatStateUsing(fn ($state) => match ($state) {
                 'new' => 'New',
                 'reported' => 'Reported',
+                'in_progress'=> 'In Progress',
                 'resolved' => 'Resolved',
                 'dismissed' => 'Dismissed',
                 default => ucfirst($state),
@@ -69,6 +71,14 @@ class SafetyProblemDashboard extends Page implements Tables\Contracts\HasTable
                 ->requiresConfirmation()
                 ->action(fn (Problem $record) => redirect('/admin/issue-reports/create?prob_id=' . $record->prob_id))
                 ->visible(fn (Problem $record) => $record->status === 'new'),
+
+                Tables\Actions\DeleteAction::make()
+                ->label('Delete')
+                ->icon('heroicon-o-trash')
+                ->color('danger')
+                ->successNotificationTitle('Problem deleted successfully')
+                ->successRedirectUrl(route('filament.admin.pages.safety-problem-dashboard')),
+
         ];
     }
 
@@ -77,19 +87,19 @@ class SafetyProblemDashboard extends Page implements Tables\Contracts\HasTable
         return [
             'new' => [
                 'label' => 'New',
-                'modifyQueryUsing' => fn ($query) => $query->where('status', 'new'),
+                'modifyQueryUsing' => fn ($query) => $query->where('status', 'new')->latest(),
             ],
             'reported' => [
                 'label' => 'Reported',
-                'modifyQueryUsing' => fn ($query) => $query->where('status', 'reported'),
+                'modifyQueryUsing' => fn ($query) => $query->where('status', 'reported')->latest(),
             ],
             'resolved' => [
                 'label' => 'Resolved',
-                'modifyQueryUsing' => fn ($query) => $query->where('status', 'resolved'),
+                'modifyQueryUsing' => fn ($query) => $query->where('status', 'resolved')->latest(),
             ],
             'dismissed' => [
                 'label' => 'Dismissed',
-                'modifyQueryUsing' => fn ($query) => $query->where('status', 'dismissed'),
+                'modifyQueryUsing' => fn ($query) => $query->where('status', 'dismissed')->latest(),
             ],
             'all' => [
                 'label' => 'All',
@@ -100,9 +110,7 @@ class SafetyProblemDashboard extends Page implements Tables\Contracts\HasTable
     public int $totalProblems;
     public int $newProblems;
     public int $reportedProblems;
-
     public int $inProgressProblems;
-
     public int $resolvedProblems;
     public int $dismissedProblems;
 

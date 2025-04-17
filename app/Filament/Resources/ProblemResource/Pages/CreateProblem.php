@@ -6,19 +6,19 @@ use App\Filament\Resources\ProblemResource;
 use Filament\Resources\Pages\CreateRecord;
 use App\Notifications\NewProblemNotification;
 use App\Models\User;
-use App\Models\Problem;
-
 
 class CreateProblem extends CreateRecord
 {
     protected static string $resource = ProblemResource::class;
 
-    public static function afterCreate(Problem $record): void
-{
-    $safeties = User::where('role', 'safety')->get();
+    protected function afterCreate(): void
+    {
+        $record = $this->record; // ← ดึง Problem ที่เพิ่งสร้าง
 
-    foreach ($safeties as $safety) {
-        $safety->notify(new NewProblemNotification($record));
+        $safeties = User::where('role', 'safety')->get();
+
+        foreach ($safeties as $safety) {
+            $safety->notify(new NewProblemNotification($record));
+        }
     }
-}
 }
