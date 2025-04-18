@@ -79,7 +79,7 @@ class HazardTypeResource extends Resource
 
     public static function shouldRegisterNavigation(): bool
     {
-        return auth()->user()?->role !== 'employee';
+        return in_array (auth()->user()?->role, ['admin','safety']);
     }
 
 }

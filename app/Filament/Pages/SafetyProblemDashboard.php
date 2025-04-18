@@ -38,21 +38,32 @@ class SafetyProblemDashboard extends Page implements Tables\Contracts\HasTable
             ImageColumn::make('pic_before')->label('Before Image')->height(60),
             BadgeColumn::make('status')->colors([
                 'primary' => 'new',
-                'success' => 'reported',
-                'info' => 'in_progress',
-                'warning' => 'resolved',
+                'info' => 'reported',
+                'warning' => 'in_progress',
+                'success' => 'resolved',
                 'danger' => 'dismissed',
             ])->formatStateUsing(fn ($state) => match ($state) {
-                'new' => 'New',
-                'reported' => 'Reported',
-                'in_progress'=> 'In Progress',
-                'resolved' => 'Resolved',
-                'dismissed' => 'Dismissed',
+                'new' => 'new',
+                'reported' => 'reported',
+                'in_progress'=> 'in progress',
+                'resolved' => 'resolved',
+                'dismissed' => 'dismissed',
                 default => ucfirst($state),
             }),
             TextColumn::make('created_at')->label('Created')->since()
-        ];
-    }
+            ];
+
+        }
+
+        protected function getTableBulkActions(): array
+        {
+            return [
+                Tables\Actions\DeleteBulkAction::make()
+                    ->label('Delete Selected')
+                    ->icon('heroicon-o-trash')
+                    ->color('danger'),
+            ];
+        }
 
     protected function getTableActions(): array
     {
@@ -72,12 +83,20 @@ class SafetyProblemDashboard extends Page implements Tables\Contracts\HasTable
                 ->action(fn (Problem $record) => redirect('/admin/issue-reports/create?prob_id=' . $record->prob_id))
                 ->visible(fn (Problem $record) => $record->status === 'new'),
 
-                Tables\Actions\DeleteAction::make()
+            /*Tables\Actions\DeleteAction::make()
                 ->label('Delete')
                 ->icon('heroicon-o-trash')
                 ->color('danger')
                 ->successNotificationTitle('Problem deleted successfully')
-                ->successRedirectUrl(route('filament.admin.pages.safety-problem-dashboard')),
+                ->successRedirectUrl(route('filament.admin.pages.safety-problem-dashboard')),*/
+
+            Action::make('dismiss')
+                ->label('Dismiss')
+                ->color('danger')
+                ->icon('heroicon-o-x-circle')
+                ->requiresConfirmation()
+                ->visible(fn ($record) => $record->status !== 'dismissed')
+                ->action(fn ($record) => $record->update(['status' => 'dismissed']))
 
         ];
     }

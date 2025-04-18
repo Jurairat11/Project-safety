@@ -43,11 +43,11 @@ class DepartmentIssueAlertDashboard extends Page implements Tables\Contracts\Has
                     'danger' => 'dismissed',
                 ])
                 ->formatStateUsing(fn (string $state) => match ($state) {
-                    'new' => 'New',
-                    'reported' => 'Reported',
-                    'in_progress' => 'In Progress',
-                    'resolved' => 'Resolved',
-                    'dismissed' => 'Dismissed',
+                    'new' => 'new',
+                    'reported' => 'reported',
+                    'in_progress' => 'in Progress',
+                    'resolved' => 'resolved',
+                    'dismissed' => 'dismissed',
                     default => ucfirst($state),
                 }),
             TextColumn::make('created_at')

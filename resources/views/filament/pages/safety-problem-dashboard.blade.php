@@ -1,6 +1,6 @@
 <x-filament::page>
     <div class="mb-4 text-lg font-bold">
-        Reported Problems List
+        Problem Reported List
     </div>
     <div class="container px-4 py-6 mx-auto">
         <div class="flex flex-wrap justify-center gap-4">

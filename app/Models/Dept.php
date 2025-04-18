@@ -25,4 +25,9 @@ class Dept extends Model
     {
         return $this->hasMany(Issue_report::class, 'responsible_dept_id');
     }
+
+    public function sections()
+    {
+        return $this->hasMany(Section::class, 'sec_id');
+    }
 }

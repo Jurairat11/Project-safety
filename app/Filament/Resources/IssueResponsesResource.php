@@ -18,6 +18,8 @@ class IssueResponsesResource extends Resource
 {
     protected static ?string $model = Issue_responses::class;
 
+    protected static ?string $navigationLabel = 'Issue Response';
+
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
 
     public static function form(Form $form): Form
@@ -88,10 +90,12 @@ class IssueResponsesResource extends Resource
 
                         Forms\Components\DatePicker::make('temp_due_date')
                             ->label('Due date')
-                            ->displayFormat('d/m/y'),
+                            ->native(false)
+                            ->displayFormat('d/m/Y'),
 
                         Forms\Components\DatePicker::make('perm_due_date')
                             ->label('Due date')
+                            ->native(false)
                             ->displayFormat('d/m/y'),
 
                         Forms\Components\Select::make('temp_responsible')
@@ -177,7 +181,14 @@ class IssueResponsesResource extends Resource
                     ->label('Picture after'),
                 Tables\Columns\TextColumn::make('status')
                     ->label('Status')
-                    ->badge(),
+                    ->badge()
+                    ->color(fn (string $state): string => match ($state) {
+                        'new' => 'primary',
+                        'reported' => 'info',
+                        'in_progress' =>'warning',
+                        'resolved'=> 'success',
+                        'dismissed' =>'danger',
+                    }),
                 Tables\Columns\TextColumn::make('created_by')
                     ->label('Created by')
                     ->searchable()
@@ -216,13 +227,30 @@ class IssueResponsesResource extends Resource
 
     public static function canViewAny(): bool
     {
-        return auth()->user()?->role !== 'employee';
+        return in_array(auth()->user()?->role, ['safety', 'admin', 'department']);
     }
 
     public static function shouldRegisterNavigation(): bool
     {
         return auth()->user()?->role !== 'employee';
     }
+
+    public static function canCreate(): bool
+    {
+        return in_array (auth()->user()?->role, ['department','admin']) ;
+    }
+
+    public static function canEdit($record): bool
+    {
+        return in_array (auth()->user()?->role, ['department','admin']) ;
+    }
+
+    public static function canDelete($record): bool
+    {
+        return in_array (auth()->user()?->role, ['department','admin']) ;
+    }
+
+
 
 
 

@@ -88,10 +88,16 @@ class ProblemResource extends Resource
                     ->label('Picture'),
                 Tables\Columns\TextColumn::make('status')
                     ->label('Status')
-                    ->badge(),
+                    ->badge()
+                    ->color(fn (string $state): string => match ($state) {
+                        'new' => 'primary',
+                        'reported' => 'info',
+                        'in_progress' =>'warning',
+                        'resolved'=> 'success',
+                        'dismissed' =>'danger',
+                    }),
                 Tables\Columns\TextColumn::make('created_at')
                     ->label('Created')
-
                     ->sortable()
                     ->dateTime('d/m/Y'),
             ])

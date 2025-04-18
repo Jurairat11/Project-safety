@@ -110,16 +110,21 @@ class EmployeesResource extends Resource
     }
 
     return $query->where('dept_id', auth()->user()?->dept_id);
+
 }
     public static function canViewAny(): bool
     {
-        return auth()->user()?->role === 'employee';
+        return in_array(auth()->user()?->role, [ 'employee','safety','department']);
     }
 
     public static function shouldRegisterNavigation(): bool
     {
-        return auth()->user()?->role === 'employee';
+        return  in_array(auth()->user()?->role, [ 'employee','safety','department']);
     }
 
 
+
 }
+
+
+

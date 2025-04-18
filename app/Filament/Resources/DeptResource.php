@@ -16,7 +16,8 @@ use Illuminate\Database\Eloquent\SoftDeletingScope;
 class DeptResource extends Resource
 {
     protected static ?string $model = Dept::class;
-
+    protected static ?string $navigationGroup = 'Department';
+    protected static ?string $navigationLabel = 'Department';
     protected static ?string $navigationIcon = 'heroicon-o-user-group';
 
     public static function form(Form $form): Form
@@ -46,6 +47,7 @@ class DeptResource extends Resource
             ])
             ->actions([
                 Tables\Actions\EditAction::make(),
+                Tables\Actions\DeleteAction::make(),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
@@ -72,9 +74,8 @@ class DeptResource extends Resource
 
     public static function canViewAny(): bool
     {
-        return auth()->user()?->role !== 'employee';
+        return in_array(auth()->user()?->role, [ 'admin', 'safety']);
     }
-
     public static function shouldRegisterNavigation(): bool
     {
         return auth()->user()?->role !== 'employee';

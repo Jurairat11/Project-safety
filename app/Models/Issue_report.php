@@ -12,6 +12,11 @@ class Issue_report extends Model
     protected $primaryKey = 'report_id';
     protected $fillable = [
         'report_id',
+        'form_no',
+        'safety_dept',
+        'section',
+        'issue_date',
+        'dead_line',
         'prob_id',
         'prob_desc',
         'issue_desc',
@@ -52,7 +57,12 @@ class Issue_report extends Model
     }
 
     public function responsibleDept()
-{
-    return $this->belongsTo(Dept::class, 'responsible_dept_id');
-}
+    {
+        return $this->belongsTo(Dept::class, 'responsible_dept_id');
+    }
+
+    public function safetyDept()
+    {
+        return $this->belongsTo(Dept::class, 'safety_dept');
+    }
 }
