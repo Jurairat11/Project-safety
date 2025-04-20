@@ -10,6 +10,7 @@ use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Filament\Forms\Components\Textarea;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 use App\Models\Issue_report;
@@ -29,49 +30,61 @@ class IssueResponsesResource extends Resource
                 Forms\Components\Section::make('Issue Responses')
                 ->schema([
                     Forms\Components\Select::make('report_id')
-                    ->label('Report ID')
-                    ->relationship('issue_report', 'report_id')
-                    ->options(function () {
-                        $deptId = auth()->user()?->dept_id;
-                        return \App\Models\Issue_report::where('responsible_dept_id', $deptId)
-                            ->pluck('report_id', 'report_id');
-                    })
-                    ->default(fn () => request()->get('report_id'))
-                    ->reactive()
-                    ->required(),
+                        ->label('Report ID')
+                        ->relationship('issue_report', 'report_id')
+                        ->options(function () {
+                            $deptId = auth()->user()?->dept_id;
+                            return \App\Models\Issue_report::where('responsible_dept_id', $deptId)
+                                ->pluck('report_id', 'report_id');
+                        })
+                        ->default(fn () => request()->get('report_id')) // รับจาก URL
+                        ->reactive()
+                        ->afterStateUpdated(function (callable $set, $state) {
+                            $issue = \App\Models\Issue_report::find($state);
+                            if ($issue) {
+                                $set('safety_emp_id', $issue->created_by);
+                                $set('form_no', $issue->form_no);
+                            }
+                        })
+                        ->afterStateHydrated(function (callable $set, $state) {
+                            $issue = \App\Models\Issue_report::find($state);
+                            if ($issue) {
+                                $set('safety_emp_id', $issue->created_by);
+                                $set('form_no', $issue->form_no);
+                            }
+                        })
+                        ->required(),
 
-                Forms\Components\TextInput::make('safety_emp_id')
-                    ->label('Safety Officer ID')
-                    ->default(function () {
-                        $reportId = request()->get('report_id');
-                        if ($reportId) {
-                            $issue = \App\Models\Issue_report::find($reportId);
-                            return $issue?->created_by;
-                        }
-                        return null;
-                    })
-                    ->disabled()
-                    ->dehydrated(true)
-                    ->required(),
+                    Forms\Components\TextInput::make('safety_emp_id')
+                        ->label('Safety Officer ID')
+                        ->disabled()
+                        ->dehydrated(true) // ต้อง dehydrated เพื่อเก็บค่าลง database
+                        ->required(),
+
+                    Forms\Components\TextInput::make('form_no')
+                        ->label('CAR No.')
+                        ->disabled()
+                        ->dehydrated(true)
+                        ->required(),
 
                     Forms\Components\Select::make('status')
                         ->label('Status')
                         ->options([
-                            'reported' => 'Reported',
-                            'in_progress' => 'In progress',
-                            'resolved' => 'Resolved',
+                            'reported' => 'reported',
+                            'in_progress' => 'in progress',
+                            'pending_review' => 'pending review',
+                            'reopened' => 'reopened',
+                            'closed' =>'closed'
                         ])
-                        ->default('resolved')
                         ->hidden()// ซ่อน field
                         ->required(),
 
-                    Forms\Components\Textarea::make('cause')
-                        ->label('Cause')
-                        ->required()
-                        ->columnSpan(2),
-
                 Forms\Components\Section::make('Issue Solving')
                 ->schema([
+                        Forms\Components\Textarea::make('cause')
+                            ->label('Cause')
+                            ->required()
+                            ->columnSpan(2),
 
                         Forms\Components\FileUpload::make('img_after')
                             ->label('Picture After')
@@ -139,6 +152,12 @@ class IssueResponsesResource extends Resource
                             ->required()
                             ->columnSpan(2),
 
+                        Forms\Components\Textarea::make('remark')
+                            ->label('Remark')
+                            ->placeholder('Add reason if not resolved...')
+                            ->rows(3)
+                            ->dehydrated(true),
+
                         Forms\Components\Select::make('created_by')
                             ->label('Created by')
                             ->options(function () {
@@ -157,7 +176,8 @@ class IssueResponsesResource extends Resource
                             })
                             ->required()
                             ->default(fn () => auth()->user()?->emp_id)
-                            ->placeholder("Select create person")
+                            ->placeholder("Select create person"),
+
 
                     ]) ->columns(2)
                 ])->columns(2)
@@ -186,8 +206,10 @@ class IssueResponsesResource extends Resource
                         'new' => 'primary',
                         'reported' => 'info',
                         'in_progress' =>'warning',
-                        'resolved'=> 'success',
+                        'pending_review'=> 'success',
+                        'reopened' => 'warning',
                         'dismissed' =>'danger',
+                        'closed' => 'secondary',
                     }),
                 Tables\Columns\TextColumn::make('created_by')
                     ->label('Created by')
@@ -199,6 +221,7 @@ class IssueResponsesResource extends Resource
                 //
             ])
             ->actions([
+                Tables\Actions\ViewAction::make(),
                 Tables\Actions\EditAction::make(),
                 Tables\Actions\DeleteAction::make(),
             ])
@@ -221,6 +244,7 @@ class IssueResponsesResource extends Resource
         return [
             'index' => Pages\ListIssueResponses::route('/'),
             'create' => Pages\CreateIssueResponses::route('/create'),
+            'view' => Pages\ViewIssueResponses::route('/{record}'),
             'edit' => Pages\EditIssueResponses::route('/{record}/edit'),
         ];
     }
@@ -249,9 +273,5 @@ class IssueResponsesResource extends Resource
     {
         return in_array (auth()->user()?->role, ['department','admin']) ;
     }
-
-
-
-
 
 }

@@ -3,9 +3,6 @@
 namespace App\Filament\Resources\IssueResponsesResource\Pages;
 
 use App\Filament\Resources\IssueResponsesResource;
-use App\Models\Issue_responses;
-use App\Models\Issue_report;
-use App\Models\Problem;
 use Filament\Resources\Pages\CreateRecord;
 
 class CreateIssueResponses extends CreateRecord
@@ -20,12 +17,13 @@ class CreateIssueResponses extends CreateRecord
             $report = \App\Models\Issue_report::find($record->report_id);
 
             if ($report) {
-                $report->update(['status' => 'resolved']);
+                $report->update(['status' => 'pending_review']);
 
                 \App\Models\Problem::where('prob_id', $report->prob_id)
-                    ->update(['status' => 'resolved']);
+                    ->update(['status' => 'pending_review']);
             }
         }
     }
+
 
 }

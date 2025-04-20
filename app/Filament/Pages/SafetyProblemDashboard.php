@@ -42,12 +42,14 @@ class SafetyProblemDashboard extends Page implements Tables\Contracts\HasTable
                 'warning' => 'in_progress',
                 'success' => 'resolved',
                 'danger' => 'dismissed',
+                'secondary' => 'closed',
             ])->formatStateUsing(fn ($state) => match ($state) {
                 'new' => 'new',
                 'reported' => 'reported',
                 'in_progress'=> 'in progress',
                 'resolved' => 'resolved',
                 'dismissed' => 'dismissed',
+                'closed' => 'closed',
                 default => ucfirst($state),
             }),
             TextColumn::make('created_at')->label('Created')->since()
@@ -112,13 +114,25 @@ class SafetyProblemDashboard extends Page implements Tables\Contracts\HasTable
                 'label' => 'Reported',
                 'modifyQueryUsing' => fn ($query) => $query->where('status', 'reported')->latest(),
             ],
-            'resolved' => [
-                'label' => 'Resolved',
-                'modifyQueryUsing' => fn ($query) => $query->where('status', 'resolved')->latest(),
+            'in_progress' => [
+                'label' => 'In Progress',
+                'modifyQueryUsing' => fn ($query) => $query->where('status', 'in_progress')->latest(),
+            ],
+            'pending_review' => [
+                'label' => 'Pending Review',
+                'modifyQueryUsing' => fn ($query) => $query->where('status', 'pending_review')->latest(),
             ],
             'dismissed' => [
                 'label' => 'Dismissed',
                 'modifyQueryUsing' => fn ($query) => $query->where('status', 'dismissed')->latest(),
+            ],
+            'closed' => [
+                'label' => 'Closed',
+                'modifyQueryUsing' => fn ($query) => $query->where('status', 'closed')->latest(),
+            ],
+            'reopened' => [
+                'label' => 'Reopened',
+                'modifyQueryUsing' => fn ($query) => $query->where('status', 'reopened')->latest(),
             ],
             'all' => [
                 'label' => 'All',
@@ -130,8 +144,12 @@ class SafetyProblemDashboard extends Page implements Tables\Contracts\HasTable
     public int $newProblems;
     public int $reportedProblems;
     public int $inProgressProblems;
-    public int $resolvedProblems;
+    public int $pendingReviewProblems;
     public int $dismissedProblems;
+
+    public int $closedProblems;
+
+    public int $reopenedProblems;
 
     public function mount(): void
     {
@@ -139,8 +157,10 @@ class SafetyProblemDashboard extends Page implements Tables\Contracts\HasTable
         $this->newProblems = Problem::where('status', 'new')->count();
         $this->reportedProblems = Problem::where('status', 'reported')->count();
         $this->inProgressProblems = Problem::where('status', 'in_progress')->count();
-        $this->resolvedProblems = Problem::where('status', 'resolved')->count();
+        $this->pendingReviewProblems = Problem::where('status', 'pending_review')->count();
         $this->dismissedProblems = Problem::where('status', 'dismissed')->count();
+        $this->closedProblems = Problem::where('status', 'closed')->count();
+        $this->reopenedProblems = Problem::where('status', 'reopened')->count();
     }
 
     public static function getNavigationBadge(): ?string

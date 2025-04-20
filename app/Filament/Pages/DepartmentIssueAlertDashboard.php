@@ -39,15 +39,19 @@ class DepartmentIssueAlertDashboard extends Page implements Tables\Contracts\Has
                     'primary' => 'new',
                     'info' => 'reported',
                     'warning' => 'in_progress',
-                    'success' => 'resolved',
+                    'success' => 'pending_review',
+                    'secondary' => 'closed',
+                    'warning' => 'reopened',
                     'danger' => 'dismissed',
                 ])
                 ->formatStateUsing(fn (string $state) => match ($state) {
                     'new' => 'new',
                     'reported' => 'reported',
                     'in_progress' => 'in Progress',
-                    'resolved' => 'resolved',
+                    'pending_review' => 'pending review',
                     'dismissed' => 'dismissed',
+                    'reopened' => 'reopened',
+                    'closed' => 'closed',
                     default => ucfirst($state),
                 }),
             TextColumn::make('created_at')

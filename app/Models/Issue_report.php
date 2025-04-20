@@ -28,6 +28,7 @@ class Issue_report extends Model
         'dept_id',
         'responsible_dept_id',
         'created_by',
+        'parent_id',
     ];
 
     public function problem(){
@@ -65,4 +66,25 @@ class Issue_report extends Model
     {
         return $this->belongsTo(Dept::class, 'safety_dept');
     }
+
+    public function responses()
+    {
+        return $this->hasMany(Issue_responses::class, 'report_id', 'report_id');
+    }
+
+        public function parent()
+    {
+        return $this->belongsTo(Issue_report::class, 'parent_id');
+    }
+
+    public function children()
+    {
+        return $this->hasMany(Issue_report::class, 'parent_id');
+    }
+
+    public function sectionRelation()
+    {
+        return $this->belongsTo(Section::class, 'section', 'sec_id');
+    }
+
 }

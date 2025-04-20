@@ -50,8 +50,9 @@ class ViewProblem extends ViewRecord
                                 'new' => 'new',
                                 'reported' => 'reported',
                                 'in_progress' => 'in progress',
-                                'resolved' => 'resolved',
+                                'pending_review' => 'pending review',
                                 'dismissed' => 'dismissed',
+                                'closed' => 'closed',
                                 default => 'Unknown',
                             })
                             ->extraAttributes(['class' => 'text-sm font-medium text-gray-800']),

@@ -4,7 +4,9 @@ namespace App\Filament\Resources;
 
 use App\Filament\Resources\IssueReportResource\Pages;
 use App\Filament\Resources\IssueReportResource\RelationManagers;
+use App\Models\Employees;
 use App\Models\Issue_report;
+use Illuminate\Support\Carbon;
 use App\Models\Section;
 use App\Models\Dept;
 use Filament\Forms;
@@ -12,7 +14,6 @@ use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
-use App\Models\Problem;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 use Filament\Resources\Pages\CreateRecord;
@@ -25,11 +26,21 @@ class IssueReportResource extends Resource
     protected static ?string $navigationLabel = 'Issue Report';
     protected static ?int $navigationSort = 1;
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
+
+    public static function getNavigationBadge(): ?string
+    {
+        $count = Issue_report::where('status', 'pending_review')->count();
+
+        return $count > 0 ? (string) $count : null;
+    }
+
+    protected static ?string $navigationBadgeColor = 'warning';
+
     public static function form(Form $form): Form
     {
         return $form
             ->schema([
-                Forms\Components\Fieldset::make('prob_id')
+                Forms\Components\Section::make('Problem Report')
                     ->label('Issue Details')
                     ->schema([
                         Forms\Components\Select::make('prob_id')
@@ -112,48 +123,51 @@ class IssueReportResource extends Resource
                                 ->disabled()
                                 ->dehydrated(true),
 
-                        ]),
+                        ])->columns(2), // แสดงเป็น 2 คอลัมน์
 
-                    Forms\Components\Fieldset::make('P-CAR Details')
+                    Forms\Components\Section::make('P-CAR Details')
                     ->schema([
 
                         Forms\Components\TextInput::make('form_no')
-                            ->label('Form No.')
-                            ->default(function () {
-                                // ตัวอย่างการ gen: C 01/00 (สามารถปรับ logic ได้)
-                                $latestId = \App\Models\Issue_report::max('report_id') + 1;
-                                return 'C ' . str_pad($latestId, 2, '0', STR_PAD_LEFT) . '/00';
-                            })
-                            ->unique(ignoreRecord: true)
-                            ->disabled()
-                            ->dehydrated(true), // บันทึกแม้ว่า disabled
+                        ->label('Form No.')
+                        ->default(function () {
+                            $year = Carbon::now()->format('y'); // ปี ค.ศ. 2 หลัก เช่น 25
+                            $count = Issue_report::whereYear('created_at', now()->year)->count() + 1;
 
-                        // 🔹 แสดงแผนกของ จป.
+                            return 'C ' . str_pad($count, 2, '0', STR_PAD_LEFT) . '/' . $year;
+                        })
+                        ->unique(ignoreRecord: true)
+                        ->disabled()
+                        ->dehydrated(true),
+
+                        //แสดงแผนกของ จป.
                         Forms\Components\Select::make('safety_dept')
                             ->label('Safety Department')
-                            ->options(\App\Models\Dept::all()->pluck('dept_name', 'dept_id'))
-                            ->reactive()
-                            ->afterStateUpdated(function ($state, callable $set) {
-                                $section = Section::where('dept_id', $state)->value('sec_name');
-                                $set('section', $section); // ตั้งค่าให้ฟิลด์ section อัตโนมัติ
-                            }),
+                            ->options(Dept::pluck('dept_name', 'dept_id'))
+                            ->reactive(),  // เมื่อเปลี่ยนแผนก จะ re-render ฟิล์ม
 
-                        Forms\Components\TextInput::make('section')
-                            ->label('Section')
+                        Forms\Components\Select::make('section')
+                            ->label('Safety Section')
+                            ->options(function (callable $get) {
+                                $deptId = $get('safety_dept');
+                                return Section::where('dept_id', $deptId)
+                                            ->pluck('sec_name', 'sec_id');
+                            })
                             ->required()
-                            ->reactive(), // ให้รองรับการตั้งค่าใหม่แบบอัตโนมัติ
+                            ->disabled(fn (callable $get) => ! $get('safety_dept'))
+                            ->reactive(), // รองรับการโหลด option ใหม่
 
-                        // 🔹 วันที่แจ้ง
+                        //วันที่แจ้ง
                         Forms\Components\DatePicker::make('issue_date')
-                            ->label('Issue Date')
+                            ->label('Create Date')
                             ->default(now())
                             ->native(false)
                             ->displayFormat('d/m/Y')
                             ->required(),
 
-                        // 🔹 วันที่สิ้นสุด
+                        //วันที่สิ้นสุด
                         Forms\Components\DatePicker::make('dead_line')
-                            ->label('Deadline')
+                            ->label('Deadline Date')
                             ->native(false)
                             ->displayFormat('d/m/Y')
                             ->required(),
@@ -162,7 +176,6 @@ class IssueReportResource extends Resource
                         ->label('Issue Description')
                         ->placeholder('Describe the issue')
                         ->rows(4)
-                        ->columnSpanFull()
                         ->nullable(),
 
                         Forms\Components\Select::make('hazard_level_id')
@@ -180,7 +193,8 @@ class IssueReportResource extends Resource
                         ->options([
                             'reported' => 'reported',
                             'in_progress' => 'in progress',
-                            'resolved' => 'resolved',
+                            'pending_review' => 'pending review',
+                            'reopened' => 'reopened',
                             'closed' =>'closed'
                         ])
                         ->default('reported')
@@ -194,18 +208,25 @@ class IssueReportResource extends Resource
 
                     Forms\Components\Select::make('responsible_dept_id')
                         ->label('Responsible Department')
-                        ->options(Dept::all()->pluck('dept_name', 'dept_id'))
+                        ->options(Dept::pluck('dept_name', 'dept_id'))
                         ->searchable()
-                        ->placeholder('Select responsible department')
+                        ->preload()
                         ->required(),
 
-                    Forms\Components\TextInput::make('created_by')
+                    Forms\Components\Select::make('created_by')
                         ->label('Created By')
+                        ->searchable()
+                        ->options(
+                            Employees::all()->pluck('full_name', 'emp_id') // key = emp_id, value = name
+                        )
                         ->default(fn () => auth()->user()?->emp_id)
-                        ->disabled()
-                        ->dehydrated(true), // ให้ส่งค่าลง DB ด้วย ถึงแม้ disabled
+                        ->required(),
 
-                    ])->columns(2),
+                    Forms\Components\Hidden::make('parent_id')
+                        ->dehydrated(true) // สำคัญมาก ให้บันทึกค่า
+                        ->default(request()->get('parent_id')) // เผื่อ prefill จาก query string
+
+                    ])->columns(3),
 
 
             ]);
@@ -216,7 +237,7 @@ class IssueReportResource extends Resource
         return $table
             ->columns([
                 Tables\Columns\TextColumn::make('problem.prob_id')
-                    ->label('Problem_ID'),
+                    ->label('Problem ID'),
                 Tables\Columns\ImageColumn::make('img_before')
                     ->label('Picture Before'),
                 Tables\Columns\TextColumn::make('hazardLevel.Level')
@@ -225,8 +246,6 @@ class IssueReportResource extends Resource
                     ->label('Hazard Type')
                     ->sortable()
                     ->searchable(),
-                Tables\Columns\TextColumn::make('dept.dept_name')
-                    ->label('Department'),
                 Tables\Columns\TextColumn::make('status')
                     ->label('Status')
                     ->badge()
@@ -234,9 +253,13 @@ class IssueReportResource extends Resource
                         'new' => 'primary',
                         'reported' => 'info',
                         'in_progress' =>'warning',
-                        'resolved'=> 'success',
+                        'pending_review'=> 'success',
                         'dismissed' =>'danger',
+                        'closed' => 'secondary',
+                        'reopened' => 'warning',
                     }),
+                Tables\Columns\TextColumn::make('responsibleDept.dept_name')
+                    ->label('Responsible'),
                 Tables\Columns\TextColumn::make('created_by')
                     ->label('Created By'),
             ])
@@ -285,6 +308,22 @@ class IssueReportResource extends Resource
     {
         return in_array (auth()->user()?->role, ['admin','safety']);
     }
+
+    public static function canCreate(): bool
+    {
+        return in_array (auth()->user()?->role, ['safety','admin']); ;
+    }
+
+    public static function canEdit($record): bool
+    {
+        return in_array (auth()->user()?->role, ['safety','admin']) ;
+    }
+
+    public static function canDelete($record): bool
+    {
+        return in_array (auth()->user()?->role, ['safety','admin']) ;
+    }
+
 
 
 }

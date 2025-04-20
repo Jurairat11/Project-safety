@@ -62,9 +62,13 @@ class ProblemResource extends Resource
                 Select::make('status')
                     ->label('Status')
                     ->options([
-                        'new' => 'New',
-                        'reported' => 'Reported',
-                        'dismissed' => 'Dismissed',
+                        'new' => 'new',
+                        'reported' => 'reported',
+                        'in_progress' => 'in progress',
+                        'pending_review' => 'pending review',
+                        'closed' => 'closed',
+                        'reopened' => 'reopened',
+                        'dismissed' => 'dismissed',
                     ])
                     ->default('new')
                     ->disabled() // หากให้ระบบเปลี่ยนสถานะเอง
@@ -93,8 +97,10 @@ class ProblemResource extends Resource
                         'new' => 'primary',
                         'reported' => 'info',
                         'in_progress' =>'warning',
-                        'resolved'=> 'success',
+                        'pending_review'=> 'success',
                         'dismissed' =>'danger',
+                        'reopened'=> 'warning',
+                        'closed' => 'secondary',
                     }),
                 Tables\Columns\TextColumn::make('created_at')
                     ->label('Created')

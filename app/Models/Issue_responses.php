@@ -23,7 +23,14 @@ class Issue_responses extends Model
         'perm_responsible',
         'preventive_act',
         'created_by',
-        'reply_at'
+        'reply_at',
+        'remark',
+        'form_no',
+    ];
+
+    protected $casts = [
+        'temp_due_date' => 'date',     // จะได้เป็น Carbon
+        'perm_due_date' => 'date',
     ];
 
     public function employee()
@@ -41,5 +48,14 @@ class Issue_responses extends Model
         return $this->belongsTo(Employees::class, 'created_by', 'emp_id');
     }
 
+    public function tempResponsible()
+    {
 
+        return $this->belongsTo(Employees::class, 'temp_responsible', 'emp_id');
+    }
+
+    public function permResponsible()
+    {
+        return $this->belongsTo(Employees::class, 'perm_responsible', 'emp_id');
+    }
 }
