@@ -93,6 +93,7 @@ class ProblemResource extends Resource
                 Tables\Columns\TextColumn::make('status')
                     ->label('Status')
                     ->badge()
+                    ->formatStateUsing(fn ($state) => str_replace('_', ' ', ucfirst($state)))
                     ->color(fn (string $state): string => match ($state) {
                         'new' => 'primary',
                         'reported' => 'info',
@@ -103,9 +104,11 @@ class ProblemResource extends Resource
                         'closed' => 'secondary',
                     }),
                 Tables\Columns\TextColumn::make('created_at')
-                    ->label('Created')
+                    ->label('Created at')
                     ->sortable()
                     ->dateTime('d/m/Y'),
+
+
             ])
             ->filters([
                 //

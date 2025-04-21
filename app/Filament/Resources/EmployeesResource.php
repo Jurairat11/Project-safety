@@ -20,6 +20,8 @@ class EmployeesResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-user';
 
+    protected static ?int $navigationSort = 1;
+
     public static function form(Form $form): Form
     {
         return $form
@@ -29,7 +31,7 @@ class EmployeesResource extends Resource
                     ->required()
                     ->unique(ignoreRecord: true),
                 Forms\Components\TextInput::make('emp_name')
-                    ->label('Name')
+                    ->label('First name')
                     ->required(),
                 Forms\Components\TextInput::make('lastname')
                     ->label('Last name')
@@ -50,7 +52,7 @@ class EmployeesResource extends Resource
                     ->sortable()
                     ->searchable(),
                 Tables\Columns\TextColumn::make('emp_name')
-                    ->label('Name')
+                    ->label('First name')
                     ->sortable()
                     ->searchable(),
                 Tables\Columns\TextColumn::make('lastname')
@@ -68,12 +70,14 @@ class EmployeesResource extends Resource
                     Dept::all()->pluck('dept_name', 'dept_id') // หรือ 'id' แล้วแต่ชื่อ field
                 )
                 ->searchable()
-                ->visible(fn () => auth()->user()->role === 'admin' || auth()->user()->role === 'safety')
+                ->visible(fn () => auth()->user()->role === 'admin' || auth()->user()->role === 'safety'
+                || auth()->user()->role === 'employee')
                 ->default(null),
 
             ])
             ->actions([
                 Tables\Actions\EditAction::make(),
+                /*->visible(fn ($record) => $record->emp_id === auth()->user()?->emp_id), //เฉพาะเจ้าของ*/
                 Tables\Actions\DeleteAction::make(),
             ])
             ->bulkActions([
@@ -99,19 +103,19 @@ class EmployeesResource extends Resource
         ];
     }
 
-    public static function getEloquentQuery(): Builder
-{
-    $query = parent::getEloquentQuery();
+        public static function getEloquentQuery(): Builder
+    {
+        $query = parent::getEloquentQuery();
 
-    if (auth()->user()?->role === 'safety') {
-        return $query->whereHas('user', fn ($q) =>
-            $q->where('role', '!=', 'admin')
-        );
+        if (auth()->user()?->role === 'safety') {
+            return $query->whereHas('user', fn ($q) =>
+                $q->where('role', '!=', 'admin')
+            );
+        }
+
+        return $query->where('dept_id', auth()->user()?->dept_id);
+
     }
-
-    return $query->where('dept_id', auth()->user()?->dept_id);
-
-}
     public static function canViewAny(): bool
     {
         return in_array(auth()->user()?->role, [ 'employee','safety','department']);
@@ -122,7 +126,10 @@ class EmployeesResource extends Resource
         return  in_array(auth()->user()?->role, [ 'employee','safety','department']);
     }
 
-
+    public static function canCreate(): bool
+    {
+        return false; // ปิดการสร้างพนักงานใหม่
+    }
 
 }
 

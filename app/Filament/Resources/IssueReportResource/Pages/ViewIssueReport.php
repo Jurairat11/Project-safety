@@ -186,7 +186,7 @@ class ViewIssueReport extends ViewRecord
                     }
 
                      // ปิด responses ที่เกี่ยวข้อง
-                    Issue_responses::where('report_id', $this->record->id)
+                    Issue_responses::where('report_id', $this->record->report_id)
                     ->update(['status' => 'closed']);
 
                 }),
@@ -206,7 +206,7 @@ class ViewIssueReport extends ViewRecord
                         'prob_id'              => $this->record->prob_id,
                         'safety_dept'          => $this->record->safety_dept,
                         'section'              => $this->record->section,
-                        'issue_date'          => $this->record->issue_date,
+                        'issue_date'           => $this->record->issue_date,
                         'dead_line'            => $this->record->dead_line,
                         'issue_desc'           => $this->record->issue_desc,
                         'hazard_level_id'      => $this->record->hazard_level_id,

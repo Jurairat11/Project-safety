@@ -8,6 +8,7 @@ use Filament\Resources\Pages\CreateRecord;
 class CreateIssueResponses extends CreateRecord
 {
     protected static string $resource = IssueResponsesResource::class;
+    protected static ?string $title = 'Create Issue Response';
 
     protected function afterCreate(): void
     {

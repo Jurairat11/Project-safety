@@ -18,6 +18,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 use Filament\Resources\Pages\CreateRecord;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Auth;
 
 class IssueReportResource extends Resource
 {
@@ -25,7 +26,7 @@ class IssueReportResource extends Resource
     protected static ?string $navigationGroup = 'Issue Report';
     protected static ?string $navigationLabel = 'Issue Report';
     protected static ?int $navigationSort = 1;
-    protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
+    protected static ?string $navigationIcon = 'heroicon-o-exclamation-triangle';
 
     public static function getNavigationBadge(): ?string
     {
@@ -173,20 +174,20 @@ class IssueReportResource extends Resource
                             ->required(),
 
                         Forms\Components\Textarea::make('issue_desc')
-                        ->label('Issue Description')
-                        ->placeholder('Describe the issue')
-                        ->rows(4)
-                        ->nullable(),
+                            ->label('Issue Description')
+                            ->placeholder('Describe the issue')
+                            ->rows(4)
+                            ->nullable(),
 
                         Forms\Components\Select::make('hazard_level_id')
-                        ->label('Hazard Level')
-                        ->relationship('hazardLevel','Level')
-                        ->required(),
+                            ->label('Hazard Level')
+                            ->relationship('hazardLevel','Level')
+                            ->required(),
 
                         Forms\Components\Select::make('hazard_type_id')
-                        ->label('Hazard Type')
-                        ->relationship('hazardType', 'Desc')
-                        ->required(),
+                            ->label('Hazard Type')
+                            ->relationship('hazardType', 'Desc')
+                            ->required(),
 
                         Forms\Components\Select::make('status')
                         ->label('Status')
@@ -219,7 +220,10 @@ class IssueReportResource extends Resource
                         ->options(
                             Employees::all()->pluck('full_name', 'emp_id') // key = emp_id, value = name
                         )
-                        ->default(fn () => auth()->user()?->emp_id)
+                        ->default(function () {
+                            $user = Auth::user();
+                            return $user?->emp_id;
+                        })
                         ->required(),
 
                     Forms\Components\Hidden::make('parent_id')
@@ -236,10 +240,12 @@ class IssueReportResource extends Resource
     {
         return $table
             ->columns([
+                Tables\Columns\TextColumn::make('report_id')
+                    ->label('Report ID'),
                 Tables\Columns\TextColumn::make('problem.prob_id')
                     ->label('Problem ID'),
-                Tables\Columns\ImageColumn::make('img_before')
-                    ->label('Picture Before'),
+                /*Tables\Columns\ImageColumn::make('img_before')
+                    ->label('Picture Before'),*/
                 Tables\Columns\TextColumn::make('hazardLevel.Level')
                     ->label('Hazard Level'),
                 Tables\Columns\TextColumn::make('hazardType.Desc')
@@ -249,6 +255,7 @@ class IssueReportResource extends Resource
                 Tables\Columns\TextColumn::make('status')
                     ->label('Status')
                     ->badge()
+                    ->formatStateUsing(fn ($state) => str_replace('_', ' ', ucfirst($state)))
                     ->color(fn (string $state): string => match ($state) {
                         'new' => 'primary',
                         'reported' => 'info',
@@ -261,7 +268,10 @@ class IssueReportResource extends Resource
                 Tables\Columns\TextColumn::make('responsibleDept.dept_name')
                     ->label('Responsible'),
                 Tables\Columns\TextColumn::make('created_by')
-                    ->label('Created By'),
+                    ->label('Created By')
+                    ->formatStateUsing(function ($state) {
+                        return \App\Models\Employees::where('emp_id', $state)->first()?->full_name ?? $state;
+                    }),
             ])
             ->filters([
                 //
@@ -297,31 +307,37 @@ class IssueReportResource extends Resource
 
     public static function beforeCreate($data): void
     {
-        $data['created_by'] = auth()->user()?->emp_id;
+        $user = Auth::user();
+        $data['created_by'] = Auth::user()?->emp_id;
     }
         public static function canViewAny(): bool
     {
-        return auth()->user()?->role !== 'employee';
+        $user = Auth::user();
+        return $user?->role !== 'employee';
     }
 
     public static function shouldRegisterNavigation(): bool
     {
-        return in_array (auth()->user()?->role, ['admin','safety']);
+        $user = Auth::user();
+        return in_array($user?->role, ['admin','safety']);
     }
 
     public static function canCreate(): bool
     {
-        return in_array (auth()->user()?->role, ['safety','admin']); ;
+        $user = Auth::user();
+        return in_array ($user?->role, ['safety','admin']); ;
     }
 
     public static function canEdit($record): bool
     {
-        return in_array (auth()->user()?->role, ['safety','admin']) ;
+        $user = Auth::user();
+        return in_array ($user?->role, ['safety','admin']) ;
     }
 
     public static function canDelete($record): bool
     {
-        return in_array (auth()->user()?->role, ['safety','admin']) ;
+        $user = Auth::user();
+        return in_array ($user?->role, ['safety','admin']) ;
     }
 
 

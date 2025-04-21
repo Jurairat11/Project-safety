@@ -21,6 +21,8 @@ class SafetyProblemDashboard extends Page implements Tables\Contracts\HasTable
     protected static ?string $navigationIcon = 'heroicon-o-bell-alert';
     protected static ?string $navigationLabel = 'Problem Alerts';
     protected static ?string $title = 'Safety Dashboard';
+
+    protected static ?int $navigationSort = 3;
     protected static string $view = 'filament.pages.safety-problem-dashboard';
 
     protected function getTableQuery(): Builder
@@ -32,29 +34,34 @@ class SafetyProblemDashboard extends Page implements Tables\Contracts\HasTable
     {
         return [
             TextColumn::make('prob_id')->label('Problem ID'),
-            TextColumn::make('emp_id')->label('Reported By')->searchable(),
+            TextColumn::make('emp_id')
+                ->label('Reported By')
+                ->searchable()
+                ->formatStateUsing(function ($state) {
+                    return \App\Models\Employees::where('emp_id', $state)->first()?->full_name ?? $state;
+                }),
             TextColumn::make('dept.dept_name')->label('Department'),
-            TextColumn::make('prob_desc')->label('Description')->limit(50)->searchable(),
             ImageColumn::make('pic_before')->label('Before Image')->height(60),
             BadgeColumn::make('status')->colors([
                 'primary' => 'new',
                 'info' => 'reported',
                 'warning' => 'in_progress',
-                'success' => 'resolved',
+                'success' => 'pending_review',
                 'danger' => 'dismissed',
                 'secondary' => 'closed',
             ])->formatStateUsing(fn ($state) => match ($state) {
-                'new' => 'new',
-                'reported' => 'reported',
-                'in_progress'=> 'in progress',
-                'resolved' => 'resolved',
-                'dismissed' => 'dismissed',
-                'closed' => 'closed',
-                default => ucfirst($state),
+                'new' => 'New',
+                'reported' => 'Reported',
+                'in_progress'=> 'In progress',
+                'resolved' => 'Pending review',
+                'dismissed' => 'Dismissed',
+                'closed' => 'Closed',
+                default => str_replace('_', ' ', ucfirst($state)),
             }),
-            TextColumn::make('created_at')->label('Created')->since()
+            TextColumn::make('created_at')
+                ->label('Created Date')
+                ->dateTime('d/m/Y - H:i')
             ];
-
         }
 
         protected function getTableBulkActions(): array

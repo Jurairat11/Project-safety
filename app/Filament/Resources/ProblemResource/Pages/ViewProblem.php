@@ -47,12 +47,12 @@ class ViewProblem extends ViewRecord
                             Placeholder::make('status')
                             ->label('Status')
                             ->content(fn ($record) => match ($record->status) {
-                                'new' => 'new',
-                                'reported' => 'reported',
-                                'in_progress' => 'in progress',
-                                'pending_review' => 'pending review',
-                                'dismissed' => 'dismissed',
-                                'closed' => 'closed',
+                                'new' => 'New',
+                                'reported' => 'Reported',
+                                'in_progress' => 'In progress',
+                                'pending_review' => 'Pending review',
+                                'dismissed' => 'Dismissed',
+                                'closed' => 'Closed',
                                 default => 'Unknown',
                             })
                             ->extraAttributes(['class' => 'text-sm font-medium text-gray-800']),

@@ -12,8 +12,6 @@ use Filament\Forms\Components\Textarea;
 use Filament\Forms\Form;
 use Illuminate\Support\Carbon;
 
-
-
 class ViewIssueResponses extends ViewRecord
 {
     protected static string $resource = IssueResponsesResource::class;

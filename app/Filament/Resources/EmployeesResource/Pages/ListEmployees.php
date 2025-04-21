@@ -18,9 +18,17 @@ class ListEmployees extends ListRecords
             ->label('Create'),
         ];
     }
-
+// กำหนดให้ safety และ admin เห็น List employee ท้ังหมด
     protected function getTableQuery(): \Illuminate\Database\Eloquent\Builder
-        {
-            return Employees::query()->latest(); // ← เรียงจากรายการล่าสุด
-        }
+    {
+        $user = auth()->user();
+
+        return Employees::query()
+            ->when(!in_array($user?->role, ['admin', 'safety']), function ($query) use ($user) {
+                $query->whereHas('userRole', function ($q) use ($user) {
+                    $q->where('role', $user->role);
+                });
+            })
+            ->latest();
+    }
 }

@@ -14,6 +14,7 @@ use Filament\Forms\Components\Textarea;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 use App\Models\Issue_report;
+use Illuminate\Support\Facades\Auth;
 
 class IssueResponsesResource extends Resource
 {
@@ -21,10 +22,13 @@ class IssueResponsesResource extends Resource
 
     protected static ?string $navigationLabel = 'Issue Response';
 
-    protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
+    protected static ?string $navigationIcon = 'heroicon-o-chat-bubble-left-right';
+
+    protected static ?int $navigationSort = 5;
 
     public static function form(Form $form): Form
     {
+
         return $form
             ->schema([
                 Forms\Components\Section::make('Issue Responses')
@@ -33,7 +37,7 @@ class IssueResponsesResource extends Resource
                         ->label('Report ID')
                         ->relationship('issue_report', 'report_id')
                         ->options(function () {
-                            $deptId = auth()->user()?->dept_id;
+                            $deptId = Auth::user()?->dept_id;
                             return \App\Models\Issue_report::where('responsible_dept_id', $deptId)
                                 ->pluck('report_id', 'report_id');
                         })
@@ -175,7 +179,10 @@ class IssueResponsesResource extends Resource
                                     });
                             })
                             ->required()
-                            ->default(fn () => auth()->user()?->emp_id)
+                            ->default(function () {
+                                $user = Auth::user();
+                                return $user?->emp_id;
+                            })
                             ->placeholder("Select create person"),
 
 
@@ -190,18 +197,17 @@ class IssueResponsesResource extends Resource
             ->columns([
                 Tables\Columns\TextColumn::make('response_id')
                     ->label('Response ID'),
-                Tables\Columns\TextColumn::make('report_id')
-                    ->label('Report ID'),
                 Tables\Columns\TextColumn::make('safety_emp_id')
-                    ->label('Assign by')
+                    ->label('Assign By')
                     ->formatStateUsing(function ($state) {
                         return \App\Models\Employees::where('emp_id', $state)->first()?->full_name ?? $state;
                     }),
                 Tables\Columns\ImageColumn::make('img_after')
-                    ->label('Picture after'),
+                    ->label('Picture After'),
                 Tables\Columns\TextColumn::make('status')
                     ->label('Status')
                     ->badge()
+                    ->formatStateUsing(fn ($state) => str_replace('_', ' ', ucfirst($state)))
                     ->color(fn (string $state): string => match ($state) {
                         'new' => 'primary',
                         'reported' => 'info',
@@ -212,9 +218,12 @@ class IssueResponsesResource extends Resource
                         'closed' => 'secondary',
                     }),
                 Tables\Columns\TextColumn::make('created_by')
-                    ->label('Created by')
+                    ->label('Created By')
                     ->searchable()
-                    ->sortable(),
+                    ->sortable()
+                    ->formatStateUsing(function ($state) {
+                        return \App\Models\Employees::where('emp_id', $state)->first()?->full_name ?? $state;
+                    }),
 
             ])
             ->filters([
@@ -251,27 +260,32 @@ class IssueResponsesResource extends Resource
 
     public static function canViewAny(): bool
     {
-        return in_array(auth()->user()?->role, ['safety', 'admin', 'department']);
+    $user = Auth::user();
+        return in_array($user?->role, ['admin', 'department', 'safety']);
     }
 
     public static function shouldRegisterNavigation(): bool
     {
-        return auth()->user()?->role !== 'employee';
+        $user = Auth::user();
+        return $user?->role !== 'employee';
     }
 
     public static function canCreate(): bool
     {
-        return in_array (auth()->user()?->role, ['department','admin']) ;
+        $user = Auth::user();
+        return in_array($user?->role, ['admin', 'department']);
     }
 
     public static function canEdit($record): bool
     {
-        return in_array (auth()->user()?->role, ['department','admin']) ;
+        $user = Auth::user();
+        return in_array($user?->role, ['admin', 'department']);
     }
 
     public static function canDelete($record): bool
     {
-        return in_array (auth()->user()?->role, ['department','admin']) ;
+        $user = Auth::user();
+        return in_array($user?->role, ['admin', 'department']);
     }
 
 }
