@@ -14,6 +14,7 @@ use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
+use Illuminate\Support\Facades\Auth;
 
 class SectionResource extends Resource
 {
@@ -81,6 +82,6 @@ class SectionResource extends Resource
 
     public static function canViewAny(): bool
     {
-        return in_array(auth()->user()->role, ['safety', 'admin']);
+        return in_array(Auth::user()->role, ['safety', 'admin']);
     }
 }

@@ -5,7 +5,6 @@ namespace App\Filament\Resources;
 use App\Filament\Resources\ProblemResource\Pages;
 use App\Filament\Resources\ProblemResource\RelationManagers;
 use App\Models\Problem;
-use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
@@ -18,8 +17,7 @@ use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\FileUpload;
 use App\Models\Employees;
-use App\Models\Issue_report;
-use App\Models\User;
+use Illuminate\Support\Facades\Auth;
 use App\Notifications\NewProblemReported;
 
 
@@ -29,6 +27,8 @@ class ProblemResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-exclamation-circle';
 
+    protected static ?int $navigationSort = 2;
+
     public static function form(Form $form): Form
     {
         return $form
@@ -37,14 +37,18 @@ class ProblemResource extends Resource
                 Select::make('emp_id')
                     ->label('Reported by')
                     ->options(fn () => \App\Models\Employees::all()->pluck('full_name', 'emp_id'))
-                    ->default(auth()->user()?->emp_id),
-
+                    ->default(function () {
+                        $user = Auth::user();
+                        return $user?->emp_id;
+                    }),
 
                 Select::make('dept_id')
                     ->label('Department')
                     ->options(fn () => \App\Models\Dept::all()->pluck('dept_name', 'dept_id'))
-                    ->default(fn () => auth()->user()?->dept_id),
-
+                    ->default(function () {
+                        $user = Auth::user();
+                        return $user?->dept_id;
+                }),
                 Textarea::make('prob_desc')
                     ->label('Description')
                     ->required(),
@@ -84,7 +88,7 @@ class ProblemResource extends Resource
                 Tables\Columns\TextColumn::make('prob_id')
                     ->label('Problem ID'),
                 Tables\Columns\TextColumn::make('employee.full_name')
-                    ->label('Reported by')
+                    ->label('Reported By')
                     ->searchable(),
                 Tables\Columns\TextColumn::make('dept.dept_name')
                     ->label('Department'),
@@ -104,7 +108,7 @@ class ProblemResource extends Resource
                         'closed' => 'secondary',
                     }),
                 Tables\Columns\TextColumn::make('created_at')
-                    ->label('Created at')
+                    ->label('Created At')
                     ->sortable()
                     ->dateTime('d/m/Y'),
 
@@ -154,17 +158,16 @@ class ProblemResource extends Resource
 
     public static function canViewAny(): bool
     {
-        return in_array(auth()->user()->role, ['employee','safety', 'admin']);
+        $user = Auth::user();
+        return in_array($user?->role, ['employee','safety', 'admin']);
     }
 
 
     public static function shouldRegisterNavigation(): bool
     {
-        return auth()->user()?->role === 'employee';
+        $user = Auth::user();
+        return $user?->role === 'employee';
     }
-
-
-
 
 
 }

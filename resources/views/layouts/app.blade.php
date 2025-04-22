@@ -18,6 +18,7 @@
 
 <body class="font-sans antialiased">
     <div class="min-h-screen bg-gray-100 dark:bg-gray-900">
+        @livewire('database-notifications')
         @include('layouts.navigation')
 
         <!-- Page Heading -->

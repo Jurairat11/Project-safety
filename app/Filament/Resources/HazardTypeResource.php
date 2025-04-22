@@ -12,6 +12,7 @@ use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
+use Illuminate\Support\Facades\Auth;
 
 class HazardTypeResource extends Resource
 {
@@ -74,12 +75,12 @@ class HazardTypeResource extends Resource
 
     public static function canViewAny(): bool
     {
-        return auth()->user()?->role !== 'employee';
+        return Auth::user()?->role !== 'employee';
     }
 
     public static function shouldRegisterNavigation(): bool
     {
-        return in_array (auth()->user()?->role, ['admin','safety']);
+        return in_array (Auth::user()?->role, ['admin','safety']);
     }
 
 }

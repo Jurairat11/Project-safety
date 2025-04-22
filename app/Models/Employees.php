@@ -44,4 +44,5 @@ class Employees extends Model
         return $this->belongsTo(User::class, 'emp_id', 'emp_id');
     }
 
+
 }

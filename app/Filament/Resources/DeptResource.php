@@ -12,6 +12,7 @@ use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
+use Illuminate\Support\Facades\Auth;
 
 class DeptResource extends Resource
 {
@@ -75,10 +76,10 @@ class DeptResource extends Resource
 
     public static function canViewAny(): bool
     {
-        return in_array(auth()->user()?->role, [ 'admin', 'safety']);
+        return in_array(Auth::user()?->role, [ 'admin', 'safety']);
     }
     public static function shouldRegisterNavigation(): bool
     {
-        return auth()->user()?->role !== 'employee';
+        return Auth::user()?->role !== 'employee';
     }
 }

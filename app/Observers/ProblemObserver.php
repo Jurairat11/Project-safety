@@ -1,0 +1,58 @@
+<?php
+
+namespace App\Observers;
+
+use App\Models\Problem;
+use App\Models\User;
+use Filament\Notifications\Notification;
+
+class ProblemObserver
+{
+    /**
+     * Handle the Problem "created" event.
+     */
+    public function created(Problem $problem): void
+    {
+
+        User::where('role', 'safety')->get()
+        ->each(function ($user) use ($problem) {
+            logger("Sending notification to: {$user->emp_id}");
+            Notification::make()
+                ->title('New Problem Reported')
+                ->body("Problem ID: {$problem->prob_id}")
+                ->sendToDatabase($user);
+        });
+    }
+
+    /**
+     * Handle the Problem "updated" event.
+     */
+    public function updated(Problem $problem): void
+    {
+        //
+    }
+
+    /**
+     * Handle the Problem "deleted" event.
+     */
+    public function deleted(Problem $problem): void
+    {
+        //
+    }
+
+    /**
+     * Handle the Problem "restored" event.
+     */
+    public function restored(Problem $problem): void
+    {
+        //
+    }
+
+    /**
+     * Handle the Problem "force deleted" event.
+     */
+    public function forceDeleted(Problem $problem): void
+    {
+        //
+    }
+}

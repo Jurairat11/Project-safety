@@ -111,7 +111,7 @@ class ViewIssueReport extends ViewRecord
                             ->label('Cause')
                             ->content(fn () => optional($response)->cause ?? '-'),
 
-                            View::make('components.issue-responses-image')
+                        View::make('components.issue-responses-image')
                             ->label('Picture After')
                             ->viewData([
                                 // ถ้าไม่มี response หรือ response->img_after ก็จะเป็น null
@@ -217,7 +217,7 @@ class ViewIssueReport extends ViewRecord
                     ]);
                 }),
 
-                Action::make('createNewCAR')
+            Action::make('createNewCAR')
                 ->label('Create New CAR')
                 ->color('primary')
                 ->icon('heroicon-o-document-plus')

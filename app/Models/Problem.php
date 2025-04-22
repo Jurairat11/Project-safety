@@ -39,12 +39,12 @@ class Problem extends Model
     }
 
     public function issueReports()
-{
-    return $this->hasMany(Issue_report::class, 'prob_id', 'prob_id');
-}
-
-
-
-
+    {
+        return $this->hasMany(Issue_report::class, 'prob_id', 'prob_id');
+    }
+        public function creator()
+    {
+        return $this->belongsTo(Employees::class, 'emp_id');
+    }
 
 }

@@ -60,7 +60,7 @@ class SafetyProblemDashboard extends Page implements Tables\Contracts\HasTable
             }),
             TextColumn::make('created_at')
                 ->label('Created Date')
-                ->dateTime('d/m/Y - H:i')
+                ->dateTime('d/m/Y')
             ];
         }
 

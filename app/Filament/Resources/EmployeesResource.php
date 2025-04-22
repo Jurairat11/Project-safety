@@ -13,6 +13,7 @@ use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
+use Illuminate\Support\Facades\Auth;
 
 class EmployeesResource extends Resource
 {
@@ -70,8 +71,8 @@ class EmployeesResource extends Resource
                     Dept::all()->pluck('dept_name', 'dept_id') // หรือ 'id' แล้วแต่ชื่อ field
                 )
                 ->searchable()
-                ->visible(fn () => auth()->user()->role === 'admin' || auth()->user()->role === 'safety'
-                || auth()->user()->role === 'employee')
+                ->visible(fn () => Auth::check() && (Auth::user()->role === 'admin' || Auth::user()->role === 'safety')
+                || Auth::user()->role === 'employee')
                 ->default(null),
 
             ])
@@ -107,23 +108,23 @@ class EmployeesResource extends Resource
     {
         $query = parent::getEloquentQuery();
 
-        if (auth()->user()?->role === 'safety') {
+        if (Auth::user()?->role === 'safety') {
             return $query->whereHas('user', fn ($q) =>
                 $q->where('role', '!=', 'admin')
             );
         }
 
-        return $query->where('dept_id', auth()->user()?->dept_id);
+        return $query->where('dept_id', Auth::user()?->dept_id);
 
     }
     public static function canViewAny(): bool
     {
-        return in_array(auth()->user()?->role, [ 'employee','safety','department']);
+        return in_array(Auth::user()?->role, [ 'employee','safety','department']);
     }
 
     public static function shouldRegisterNavigation(): bool
     {
-        return  in_array(auth()->user()?->role, [ 'employee','safety','department']);
+        return  in_array(Auth::user()?->role, [ 'employee','safety','department']);
     }
 
     public static function canCreate(): bool

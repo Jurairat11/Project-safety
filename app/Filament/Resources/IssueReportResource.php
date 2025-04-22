@@ -84,17 +84,17 @@ class IssueReportResource extends Resource
 
 
                             Forms\Components\TextInput::make('emp_id')
-                            ->label('Reporting employee')
-                            ->default(function () {
-                                $probId = request()->get('prob_id');
-                                if ($probId) {
-                                    $problem = \App\Models\Problem::find($probId);
-                                    return $problem?->emp_id;
-                                }
-                                return null;
-                            })
-                            ->disabled()
-                            ->dehydrated(true),
+                                ->label('Reporting employee')
+                                ->default(function () {
+                                    $probId = request()->get('prob_id');
+                                    if ($probId) {
+                                        $problem = \App\Models\Problem::find($probId);
+                                        return $problem?->emp_id;
+                                    }
+                                    return null;
+                                })
+                                ->disabled()
+                                ->dehydrated(true),
 
                             Forms\Components\Select::make('dept_id')
                                 ->label('Reporter Department')

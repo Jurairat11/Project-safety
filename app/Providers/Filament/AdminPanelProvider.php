@@ -17,11 +17,15 @@ use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
 use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Session\Middleware\StartSession;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
+use Filament\Notifications\Livewire\DatabaseNotifications;
 
 class AdminPanelProvider extends PanelProvider
 {
     public function panel(Panel $panel): Panel
     {
+        DatabaseNotifications::trigger('filament.notifications.database-notifications-trigger');
+        //DatabaseNotifications::pollingInterval('30s');
+
         return $panel
             ->default()
             ->id('admin')
@@ -53,8 +57,11 @@ class AdminPanelProvider extends PanelProvider
             ])
             ->authMiddleware([
                 Authenticate::class,
+            ])
+            ->databaseNotifications() // เปิดระบบ noti ที่ใช้ Bell icon
+            ->topbar(fn () => [
+                DatabaseNotifications::class, // ให้ Bell icon ทำงาน
             ]);
     }
-
 
 }
