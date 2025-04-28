@@ -52,12 +52,16 @@ class ViewProblem extends ViewRecord
                                 'in_progress' => 'In progress',
                                 'pending_review' => 'Pending review',
                                 'dismissed' => 'Dismissed',
+                                'reopened' => 'Reopened',
                                 'closed' => 'Closed',
                                 default => 'Unknown',
                             })
                             ->extraAttributes(['class' => 'text-sm font-medium text-gray-800']),
 
-
+                            Placeholder::make('dismiss_reason')
+                                ->label('Reason for Dismissal')
+                                ->content(fn ($record) => $record->dismiss_reason ?? '-')
+                                ->visible(fn ($record) => $record->status === 'dismissed'),
 
                             View::make('components.problem-view-image')
                             ->label('Before Image')
@@ -66,7 +70,7 @@ class ViewProblem extends ViewRecord
                             ])
                             ->columnSpanFull()
                     ])
-                    ->columns(3),
+                    ->columns(4),
             ]);
     }
 }

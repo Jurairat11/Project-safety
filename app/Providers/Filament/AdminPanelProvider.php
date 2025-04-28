@@ -19,6 +19,7 @@ use Illuminate\Session\Middleware\StartSession;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
 use Filament\Notifications\Livewire\DatabaseNotifications;
 
+
 class AdminPanelProvider extends PanelProvider
 {
     public function panel(Panel $panel): Panel
@@ -32,10 +33,16 @@ class AdminPanelProvider extends PanelProvider
             ->path('admin')
             ->login()
             ->colors([
-                'primary' => Color::Amber,
+                'danger' => Color::Red,
+                'gray' => Color::Gray,
+                'info' => Color::Blue,
+                'primary' => Color::Indigo,
+                'success' => Color::Green,
+                'warning' => Color::Yellow,
             ])
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\\Filament\\Resources')
             ->discoverPages(in: app_path('Filament/Pages'), for: 'App\\Filament\\Pages')
+            ->discoverWidgets(in: app_path('Filament/Widgets'), for: 'App\\Filament\\Widgets')
             ->pages([
                 Pages\Dashboard::class,
             ])
@@ -61,7 +68,9 @@ class AdminPanelProvider extends PanelProvider
             ->databaseNotifications() // เปิดระบบ noti ที่ใช้ Bell icon
             ->topbar(fn () => [
                 DatabaseNotifications::class, // ให้ Bell icon ทำงาน
-            ]);
+            ])
+            ->pages([]);
+
     }
 
 }

@@ -22,7 +22,7 @@ return new class extends Migration
             $table->unsignedBigInteger('emp_id');
             $table->unsignedBigInteger('dept_id');
 
-             $table->unsignedBigInteger('responsible_dept_id')->nullable();
+            $table->unsignedBigInteger('responsible_dept_id')->nullable();
             $table->timestamps();
 
             // Foreign keys

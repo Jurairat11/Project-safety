@@ -3,15 +3,12 @@
 namespace App\Filament\Resources;
 
 use App\Filament\Resources\DeptResource\Pages;
-use App\Filament\Resources\DeptResource\RelationManagers;
 use App\Models\Dept;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
-use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\SoftDeletingScope;
 use Illuminate\Support\Facades\Auth;
 
 class DeptResource extends Resource
@@ -19,6 +16,7 @@ class DeptResource extends Resource
     protected static ?string $model = Dept::class;
     protected static ?string $navigationGroup = 'Department';
     protected static ?string $navigationLabel = 'Department';
+    protected static ?string $pluralLabel = 'Departments';
     protected static ?string $navigationIcon = 'heroicon-o-user-group';
     protected static ?int $navigationSort = 1;
 
@@ -40,9 +38,14 @@ class DeptResource extends Resource
     {
         return $table
             ->columns([
-                Tables\Columns\TextColumn::make('dept_id')->label('ID'),
-                Tables\Columns\TextColumn::make('dept_name')->label('Department')->sortable()->searchable(),
-                Tables\Columns\TextColumn::make('dept_code')->label('Department code')->sortable()->searchable(),
+                Tables\Columns\TextColumn::make('dept_id')
+                ->label('ID'),
+                Tables\Columns\TextColumn::make('dept_name')
+                ->label('Department')
+                ->searchable(),
+                Tables\Columns\TextColumn::make('dept_code')
+                ->label('Department code')
+                ->searchable(),
             ])
             ->filters([
                 //

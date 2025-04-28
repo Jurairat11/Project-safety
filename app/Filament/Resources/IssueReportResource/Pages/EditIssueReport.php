@@ -10,6 +10,8 @@ class EditIssueReport extends EditRecord
 {
     protected static string $resource = IssueReportResource::class;
 
+    protected static ?string $title = 'Edit Issue report';
+
     protected function getHeaderActions(): array
     {
         return [

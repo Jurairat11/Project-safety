@@ -18,7 +18,8 @@ class Problem extends Model
         'pic_before',
         'location',
         'linked_report_id',
-        'status'
+        'status',
+        'dismiss_reason',
     ];
 
     protected $attributes = [
@@ -45,6 +46,11 @@ class Problem extends Model
         public function creator()
     {
         return $this->belongsTo(Employees::class, 'emp_id');
+    }
+
+    public function issueReport()
+    {
+        return $this->hasOne(Issue_report::class, 'prob_id', 'prob_id');
     }
 
 }

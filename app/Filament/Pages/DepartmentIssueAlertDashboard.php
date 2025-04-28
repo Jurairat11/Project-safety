@@ -8,8 +8,9 @@ use Filament\Tables;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Actions\Action;
 use Illuminate\Database\Eloquent\Builder;
-use Filament\Tables\Columns\BadgeColumn;
 use Illuminate\Support\Facades\Auth;
+use Filament\Notifications\Notification;
+use App\Models\User;
 
 
 class DepartmentIssueAlertDashboard extends Page implements Tables\Contracts\HasTable
@@ -26,15 +27,20 @@ class DepartmentIssueAlertDashboard extends Page implements Tables\Contracts\Has
     {
         return Issue_report::query()
             ->where('responsible_dept_id', Auth::user()->dept_id)
-            ->whereNotIn('status', ['pending_review', 'closed']);
+            ->whereNotIn('status', ['pending_review', 'closed'])
+            ->latest();
     }
 
     protected function getTableColumns(): array
     {
         return [
-            TextColumn::make('report_id')->label('Issue ID'),
-            TextColumn::make('issue_desc')->label('Issue Desc'),
-            TextColumn::make('created_by')->label('Created By'),
+            TextColumn::make('report_id')
+                ->label('Issue ID')
+                ->searchable(),
+            TextColumn::make('issue_desc')
+                ->label('Issue Desc'),
+            TextColumn::make('created_by')
+                ->label('Created By'),
 
             TextColumn::make('status')
                 ->label('Status')
@@ -61,7 +67,34 @@ class DepartmentIssueAlertDashboard extends Page implements Tables\Contracts\Has
                 }),
             TextColumn::make('created_at')
                 ->label('Created At')
-                ->dateTime('d/m/Y - H:i'),
+                ->timezone('Asia/Bangkok')
+                ->dateTime('d/m/Y H:i'),
+        ];
+    }
+
+    protected function getTableFilters(): array
+    {
+        return [
+            Tables\Filters\SelectFilter::make('status')
+                ->label('Status')
+                ->options([
+                    'reported' => 'Reported',
+                    'in_progress' => 'In progress',
+                    'pending_review' => 'Pending review',
+                    'closed' => 'Closed',
+                    'reopened' => 'Reopened',
+                ])
+                ->searchable(),
+        ];
+    }
+
+    protected function getTableBulkActions(): array
+    {
+        return [
+            Tables\Actions\DeleteBulkAction::make()
+                ->label('Delete Selected')
+                ->icon('heroicon-o-trash')
+                ->color('danger'),
         ];
     }
 
@@ -72,20 +105,51 @@ class DepartmentIssueAlertDashboard extends Page implements Tables\Contracts\Has
             Action::make('view')
             ->label('View')
             ->icon('heroicon-o-eye')
-            ->color('primary')
+            ->color('gray')
             ->url(fn ($record) => route('filament.admin.resources.issue-reports.view', ['record' => $record]))
             ->openUrlInNewTab(),
 
             Action::make('accept')
-                ->label('Accept')
-                ->icon('heroicon-o-check')
-                ->color('success')
-                ->requiresConfirmation()
-                ->visible(fn (Issue_report $record) => $record->status === 'reported')
-                ->action(function (Issue_report $record) { $record->update(['status' => 'in_progress']);
-                    \App\Models\Problem::where('prob_id', $record->prob_id)->update(['status' => 'in_progress']);
-                    return redirect('/admin/issue-responses/create?report_id=' . $record->report_id);
-                }),
+            ->label('Accept')
+            ->icon('heroicon-o-check')
+            ->color('success')
+            ->requiresConfirmation()
+            ->visible(fn (Issue_report $record) => $record->status === 'reported')
+            ->action(function (Issue_report $record) {
+
+                // อัปเดตสถานะ
+                $record->update(['status' => 'in_progress']);
+                Problem::where('prob_id', $record->prob_id)->update(['status' => 'in_progress']);
+
+                // ดึงข้อมูลปัญหา
+                $problem = Problem::where('prob_id', $record->prob_id)->first();
+
+                // แจ้งไปยังผู้สร้างปัญหา (employee)
+                $employee = User::where('emp_id', $problem->emp_id)->first();
+
+                if ($employee) {
+                    Notification::make()
+                        ->color('success')
+                        ->icon('heroicon-o-document-check')
+                        ->title('Issue report accepted')
+                        ->body("Your issue Problem ID: {$record->prob_id} has been sent to the department: {$record->responsibleDept->dept_name}.")
+                        ->sendToDatabase($employee);
+                }
+
+                // แจ้งไปยังผู้มี role = safety
+                User::where('role', 'safety')->get()
+                    ->each(fn ($user) =>
+                        Notification::make()
+                            ->color('success')
+                            ->icon('heroicon-o-document-check')
+                            ->title('Issue report accepted')
+                            ->body("Issue report for Problem ID: {$record->prob_id} has been accepted.")
+                            ->sendToDatabase($user)
+                    );
+
+                // Redirect ไปสร้าง Issue Response
+                return redirect('/admin/issue-responses/create?report_id=' . $record->report_id);
+            }),
 
             Tables\Actions\DeleteAction::make()
                 ->label('Delete')

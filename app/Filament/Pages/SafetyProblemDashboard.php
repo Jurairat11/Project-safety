@@ -11,8 +11,11 @@ use Filament\Tables\Columns\ImageColumn;
 use Filament\Tables\Concerns\InteractsWithTable;
 use Illuminate\Database\Eloquent\Builder;
 use Filament\Tables\Actions\Action;
-use Filament\Navigation\NavigationItem;
-
+use Filament\Forms\Components\Textarea;
+use Filament\Notifications\Notification;
+use Illuminate\Support\Facades\Auth;
+use App\Filament\Resources\IssueReportResource;
+use App\Filament\Widgets\StatsOverview;
 
 class SafetyProblemDashboard extends Page implements Tables\Contracts\HasTable
 {
@@ -21,9 +24,10 @@ class SafetyProblemDashboard extends Page implements Tables\Contracts\HasTable
     protected static ?string $navigationIcon = 'heroicon-o-bell-alert';
     protected static ?string $navigationLabel = 'Problem Alerts';
     protected static ?string $title = 'Safety Dashboard';
-
     protected static ?int $navigationSort = 3;
+
     protected static string $view = 'filament.pages.safety-problem-dashboard';
+    public int $totalProblems;
 
     protected function getTableQuery(): Builder
     {
@@ -33,10 +37,12 @@ class SafetyProblemDashboard extends Page implements Tables\Contracts\HasTable
     protected function getTableColumns(): array
     {
         return [
-            TextColumn::make('prob_id')->label('Problem ID'),
+            TextColumn::make('prob_id')
+                ->label('Problem ID')
+                ->searchable(),
             TextColumn::make('emp_id')
                 ->label('Reported By')
-                ->searchable()
+                ->searchable('emp_id')
                 ->formatStateUsing(function ($state) {
                     return \App\Models\Employees::where('emp_id', $state)->first()?->full_name ?? $state;
                 }),
@@ -48,19 +54,23 @@ class SafetyProblemDashboard extends Page implements Tables\Contracts\HasTable
                 'warning' => 'in_progress',
                 'success' => 'pending_review',
                 'danger' => 'dismissed',
-                'secondary' => 'closed',
+                'warning' => 'reopened',
+                'gray' => 'closed',
             ])->formatStateUsing(fn ($state) => match ($state) {
                 'new' => 'New',
                 'reported' => 'Reported',
                 'in_progress'=> 'In progress',
                 'resolved' => 'Pending review',
                 'dismissed' => 'Dismissed',
+                'reopened' => 'Reopened',
                 'closed' => 'Closed',
                 default => str_replace('_', ' ', ucfirst($state)),
             }),
             TextColumn::make('created_at')
-                ->label('Created Date')
-                ->dateTime('d/m/Y')
+                ->label('Created At')
+                ->dateTime('d/m/Y H:i')
+                ->timezone('Asia/Bangkok')
+                ->sortable()
             ];
         }
 
@@ -79,7 +89,7 @@ class SafetyProblemDashboard extends Page implements Tables\Contracts\HasTable
         return [
             Action::make('view')
                 ->label('View')
-                ->color('primary')
+                ->color('gray')
                 ->icon('heroicon-o-eye')
                 ->url(fn (Problem $record) => route('filament.admin.resources.problems.view', ['record' => $record->getKey()]))
                 ->openUrlInNewTab(),
@@ -99,14 +109,44 @@ class SafetyProblemDashboard extends Page implements Tables\Contracts\HasTable
                 ->successNotificationTitle('Problem deleted successfully')
                 ->successRedirectUrl(route('filament.admin.pages.safety-problem-dashboard')),*/
 
-            Action::make('dismiss')
-                ->label('Dismiss')
-                ->color('danger')
-                ->icon('heroicon-o-x-circle')
-                ->requiresConfirmation()
-                ->visible(fn ($record) => $record->status !== 'dismissed')
-                ->action(fn ($record) => $record->update(['status' => 'dismissed']))
+                Action::make('dismiss')
+                    ->label('Dismiss')
+                    ->color('danger')
+                    ->icon('heroicon-o-x-circle')
+                    ->requiresConfirmation()
+                    ->visible(fn ($record) => $record->status == 'new')
+                    ->form([
+                        Textarea::make('dismiss_reason')
+                            ->label('Reason for Dismissal')
+                            ->required(),
+                    ])
+                    ->action(function (array $data, \App\Models\Problem $record) {
+                        $record->update([
+                            'status' => 'dismissed',
+                            'dismiss_reason' => $data['dismiss_reason'],
+                        ]);
 
+                        // แจ้งเตือนกลับไปยังผู้แจ้งปัญหา
+                        $employee = \App\Models\User::where('emp_id', $record->emp_id)->first();
+
+                        if ($employee) {
+                            Notification::make()
+                                ->icon('heroicon-o-exclamation-triangle')
+                                ->iconColor('danger')
+                                ->title('Problem Dismissed')
+                                ->body("Problem ID: {$record->prob_id} was dismissed.\nReason: {$data['dismiss_reason']}")
+                                ->sendToDatabase($employee);
+                        }
+                    })
+        ];
+    }
+
+    public static string $resource = IssueReportResource::class;
+
+    protected function getHeaderWidgets(): array
+    {
+        return [
+            StatsOverview::class
         ];
     }
 
@@ -116,6 +156,7 @@ class SafetyProblemDashboard extends Page implements Tables\Contracts\HasTable
             'new' => [
                 'label' => 'New',
                 'modifyQueryUsing' => fn ($query) => $query->where('status', 'new')->latest(),
+
             ],
             'reported' => [
                 'label' => 'Reported',
@@ -147,27 +188,10 @@ class SafetyProblemDashboard extends Page implements Tables\Contracts\HasTable
         ];
     }
 
-    public int $totalProblems;
-    public int $newProblems;
-    public int $reportedProblems;
-    public int $inProgressProblems;
-    public int $pendingReviewProblems;
-    public int $dismissedProblems;
-
-    public int $closedProblems;
-
-    public int $reopenedProblems;
-
     public function mount(): void
     {
         $this->totalProblems = Problem::count();
-        $this->newProblems = Problem::where('status', 'new')->count();
-        $this->reportedProblems = Problem::where('status', 'reported')->count();
-        $this->inProgressProblems = Problem::where('status', 'in_progress')->count();
-        $this->pendingReviewProblems = Problem::where('status', 'pending_review')->count();
-        $this->dismissedProblems = Problem::where('status', 'dismissed')->count();
-        $this->closedProblems = Problem::where('status', 'closed')->count();
-        $this->reopenedProblems = Problem::where('status', 'reopened')->count();
+
     }
 
     public static function getNavigationBadge(): ?string
@@ -185,6 +209,7 @@ class SafetyProblemDashboard extends Page implements Tables\Contracts\HasTable
 
     public static function canAccess(): bool
     {
-        return auth()->user()?->role === 'safety';
+        $user = Auth::user();
+        return $user?->role === 'safety';
     }
 }

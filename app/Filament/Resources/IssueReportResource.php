@@ -3,7 +3,6 @@
 namespace App\Filament\Resources;
 
 use App\Filament\Resources\IssueReportResource\Pages;
-use App\Filament\Resources\IssueReportResource\RelationManagers;
 use App\Models\Employees;
 use App\Models\Issue_report;
 use Illuminate\Support\Carbon;
@@ -14,17 +13,18 @@ use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
-use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\SoftDeletingScope;
-use Filament\Resources\Pages\CreateRecord;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Auth;
+use Filament\Tables\Actions\ActionGroup;
+use Filament\Tables\Actions\DeleteAction;
+use Filament\Tables\Actions\EditAction;
+use Filament\Tables\Actions\ViewAction;
 
 class IssueReportResource extends Resource
 {
     protected static ?string $model = Issue_report::class;
     protected static ?string $navigationGroup = 'Issue Report';
     protected static ?string $navigationLabel = 'Issue Report';
+    protected static ?string $pluralLabel = 'P-CAR Reports';
     protected static ?int $navigationSort = 1;
     protected static ?string $navigationIcon = 'heroicon-o-exclamation-triangle';
 
@@ -45,43 +45,56 @@ class IssueReportResource extends Resource
                     ->label('Issue Details')
                     ->schema([
                         Forms\Components\Select::make('prob_id')
-                            ->label('Problem ID')
-                            ->relationship('problem', 'prob_id')
-                            ->options(fn () => \App\Models\Problem::pluck('prob_id', 'prob_id'))
-                            ->default(fn () => request()->get('prob_id')) // ดึงจาก URL
-                            ->reactive()
-                            ->dehydrated(true) //เพิ่มบรรทัดนี้
-                            ->afterStateHydrated(function ($state, callable $set) {
-                                if ($state) {
-                                    $problem = \App\Models\Problem::find($state);
+                        ->label('Problem ID')
+                        ->relationship('problem', 'prob_id')
+                        ->options(function () {
+                            // 1. จาก Problem โดยตรง
+                            $fromProblem = \App\Models\Problem::where('status', 'new')->pluck('prob_id')->toArray();
 
-                                    if ($problem) {
-                                        $set('prob_desc', $problem->prob_desc);
-                                        $set('emp_id', $problem->emp_id);
+                            // 2. จาก Issue_report ที่ status = reopened → ดึง prob_id
+                            $fromIssueReports = \App\Models\Issue_report::where('status', 'reopened')
+                                ->pluck('prob_id')
+                                ->toArray();
 
-                                        $employee = \App\Models\Employees::where('emp_id', $problem->emp_id)->first();
-                                        if ($employee && $employee->dept_id) {
-                                            $set('dept_id', $employee->dept_id);
-                                        }
+                            // รวมและกรอง prob_id ไม่ซ้ำ
+                            $probIds = collect(array_merge($fromProblem, $fromIssueReports))->unique();
+
+                            // ดึงข้อมูล prob_id → สำหรับ select
+                            return \App\Models\Problem::whereIn('prob_id', $probIds)->pluck('prob_id', 'prob_id');
+                        })
+                        ->default(fn () => request()->get('prob_id'))
+                        ->reactive()
+                        ->dehydrated(true)
+                        ->afterStateHydrated(function ($state, callable $set) {
+                            if ($state) {
+                                $problem = \App\Models\Problem::find($state);
+
+                                if ($problem) {
+                                    $set('prob_desc', $problem->prob_desc);
+                                    $set('emp_id', $problem->emp_id);
+
+                                    $employee = \App\Models\Employees::where('emp_id', $problem->emp_id)->first();
+                                    if ($employee && $employee->dept_id) {
+                                        $set('dept_id', $employee->dept_id);
                                     }
                                 }
-                            })
-                            ->afterStateUpdated(function ($state, callable $set) {
-                                if ($state) {
-                                    $problem = \App\Models\Problem::find($state);
+                            }
+                        })
+                        ->afterStateUpdated(function ($state, callable $set) {
+                            if ($state) {
+                                $problem = \App\Models\Problem::find($state);
 
-                                    if ($problem) {
-                                        $set('prob_desc', $problem->prob_desc);
-                                        $set('emp_id', $problem->emp_id);
+                                if ($problem) {
+                                    $set('prob_desc', $problem->prob_desc);
+                                    $set('emp_id', $problem->emp_id);
 
-                                        $employee = \App\Models\Employees::where('emp_id', $problem->emp_id)->first();
-                                        if ($employee && $employee->dept_id) {
-                                            $set('dept_id', $employee->dept_id);
-                                        }
+                                    $employee = \App\Models\Employees::where('emp_id', $problem->emp_id)->first();
+                                    if ($employee && $employee->dept_id) {
+                                        $set('dept_id', $employee->dept_id);
                                     }
                                 }
-                            }),
-
+                            }
+                        }),
 
                             Forms\Components\TextInput::make('emp_id')
                                 ->label('Reporting employee')
@@ -241,16 +254,17 @@ class IssueReportResource extends Resource
         return $table
             ->columns([
                 Tables\Columns\TextColumn::make('report_id')
-                    ->label('Report ID'),
+                    ->label('Report ID')
+                    ->searchable(),
                 Tables\Columns\TextColumn::make('problem.prob_id')
                     ->label('Problem ID'),
                 /*Tables\Columns\ImageColumn::make('img_before')
                     ->label('Picture Before'),*/
                 Tables\Columns\TextColumn::make('hazardLevel.Level')
-                    ->label('Hazard Level'),
+                    ->label('Hazard Level')
+                    ->searchable(),
                 Tables\Columns\TextColumn::make('hazardType.Desc')
                     ->label('Hazard Type')
-                    ->sortable()
                     ->searchable(),
                 Tables\Columns\TextColumn::make('status')
                     ->label('Status')
@@ -262,7 +276,7 @@ class IssueReportResource extends Resource
                         'in_progress' =>'warning',
                         'pending_review'=> 'success',
                         'dismissed' =>'danger',
-                        'closed' => 'secondary',
+                        'closed' => 'gray',
                         'reopened' => 'warning',
                     }),
                 Tables\Columns\TextColumn::make('responsibleDept.dept_name')
@@ -272,14 +286,31 @@ class IssueReportResource extends Resource
                     ->formatStateUsing(function ($state) {
                         return \App\Models\Employees::where('emp_id', $state)->first()?->full_name ?? $state;
                     }),
+
+                Tables\Columns\TextColumn::make('created_at')
+                    ->label('Created At')
+                    ->timezone('Asia/Bangkok')
+                    ->dateTime('d/m/Y H:i')
+                    ->sortable()
             ])
             ->filters([
-                //
+                Tables\Filters\SelectFilter::make('status')
+                ->label('Status')
+                ->options( [
+                    'reported' => 'Reported',
+                    'in_progress' => 'In progress',
+                    'pending_review' => 'Pending review',
+                    'closed' => 'Closed',
+                    'reopened' => 'Reopened',
+                ])
+                ->searchable()
             ])
             ->actions([
-                Tables\Actions\ViewAction::make(),
-                Tables\Actions\EditAction::make(),
-                Tables\Actions\DeleteAction::make(),
+                ActionGroup::make([
+                    ViewAction::make(),
+                    EditAction::make(),
+                    DeleteAction::make(),
+                ]),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([

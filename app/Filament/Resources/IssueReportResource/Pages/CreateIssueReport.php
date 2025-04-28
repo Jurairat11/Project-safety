@@ -12,6 +12,7 @@ use Carbon\Carbon;
 class CreateIssueReport extends CreateRecord
 {
     protected static string $resource = IssueReportResource::class;
+    protected static ?string $title = 'Create Issue Report';
 
     protected function afterCreate(): void
     {

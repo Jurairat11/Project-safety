@@ -3,14 +3,11 @@
 namespace App\Filament\Resources;
 
 use App\Filament\Resources\ProblemResource\Pages;
-use App\Filament\Resources\ProblemResource\RelationManagers;
 use App\Models\Problem;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
-use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\SoftDeletingScope;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Textarea;
@@ -18,8 +15,6 @@ use Filament\Forms\Components\Select;
 use Filament\Forms\Components\FileUpload;
 use App\Models\Employees;
 use Illuminate\Support\Facades\Auth;
-use App\Notifications\NewProblemReported;
-
 
 class ProblemResource extends Resource
 {
@@ -78,6 +73,8 @@ class ProblemResource extends Resource
                     ->disabled() // หากให้ระบบเปลี่ยนสถานะเอง
                     ->dehydrated(false), // ไม่ส่งกลับถ้า disabled
 
+
+
             ]);
     }
 
@@ -86,10 +83,11 @@ class ProblemResource extends Resource
         return $table
             ->columns([
                 Tables\Columns\TextColumn::make('prob_id')
-                    ->label('Problem ID'),
+                    ->label('Problem ID')
+                    ->searchable('prob_id'),
                 Tables\Columns\TextColumn::make('employee.full_name')
                     ->label('Reported By')
-                    ->searchable(),
+                    ->searchable('emp_id'),
                 Tables\Columns\TextColumn::make('dept.dept_name')
                     ->label('Department'),
                 Tables\Columns\ImageColumn::make('pic_before')
@@ -105,17 +103,29 @@ class ProblemResource extends Resource
                         'pending_review'=> 'success',
                         'dismissed' =>'danger',
                         'reopened'=> 'warning',
-                        'closed' => 'secondary',
+                        'closed' => 'gray',
                     }),
                 Tables\Columns\TextColumn::make('created_at')
                     ->label('Created At')
                     ->sortable()
-                    ->dateTime('d/m/Y'),
+                    ->dateTime('d/m/Y H:i')
+                    ->timezone('Asia/Bangkok'),
 
 
             ])
             ->filters([
-                //
+                Tables\Filters\SelectFilter::make('status')
+                ->label('Status')
+                ->options( [
+                    'new' => 'New',
+                    'reported' => 'Reported',
+                    'in_progress' => 'In progress',
+                    'pending_review' => 'Pending review',
+                    'closed' => 'Closed',
+                    'reopened' => 'Reopened',
+                    'dismissed' => 'Dismissed',
+                ])
+                ->searchable()
             ])
             ->actions([
                 Tables\Actions\ViewAction::make(),
@@ -167,7 +177,24 @@ class ProblemResource extends Resource
     {
         $user = Auth::user();
         return $user?->role === 'employee';
+
+    }
+    public static function canCreate(): bool
+    {
+        $user = Auth::user();
+        return $user?->role === 'employee';
     }
 
+    public static function canEdit($record): bool
+    {
+        $user = Auth::user();
+        return $user?->role === 'employee';
+    }
+
+    public static function canDelete($record): bool
+    {
+        $user = Auth::user();
+        return $user?->role === 'employee';
+    }
 
 }

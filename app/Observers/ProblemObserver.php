@@ -16,9 +16,10 @@ class ProblemObserver
 
         User::where('role', 'safety')->get()
         ->each(function ($user) use ($problem) {
-            logger("Sending notification to: {$user->emp_id}");
             Notification::make()
-                ->title('New Problem Reported')
+                ->icon('heroicon-o-exclamation-circle')
+                ->iconColor('warning')
+                ->title('New problem reported')
                 ->body("Problem ID: {$problem->prob_id}")
                 ->sendToDatabase($user);
         });

@@ -46,9 +46,14 @@ class SectionResource extends Resource
     {
         return $table
             ->columns([
-                Tables\Columns\TextColumn::make('sec_id')->label('ID'),
-                Tables\Columns\TextColumn::make('dept.dept_name')->label('Department')->sortable()->searchable(),
-                Tables\Columns\TextColumn::make('sec_name')->label('Section')->sortable()->searchable(),
+                Tables\Columns\TextColumn::make('sec_id')
+                ->label('ID'),
+                Tables\Columns\TextColumn::make('dept.dept_name')
+                    ->label('Department')
+                    ->searchable(),
+                Tables\Columns\TextColumn::make('sec_name')
+                    ->label('Section')
+                    ->searchable(),
             ])
             ->filters([
                 //

@@ -3,7 +3,6 @@
 namespace App\Filament\Resources;
 
 use App\Filament\Resources\IssueResponsesResource\Pages;
-use App\Filament\Resources\IssueResponsesResource\RelationManagers;
 use App\Models\Issue_responses; // Ensure this model exists in the specified namespace
 use Filament\Forms;
 use Filament\Forms\Form;
@@ -11,8 +10,6 @@ use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Filament\Forms\Components\Textarea;
-use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\SoftDeletingScope;
 use App\Models\Issue_report;
 use Illuminate\Support\Facades\Auth;
 
@@ -20,7 +17,9 @@ class IssueResponsesResource extends Resource
 {
     protected static ?string $model = Issue_responses::class;
 
-    protected static ?string $navigationLabel = 'Issue Response';
+    protected static ?string $navigationLabel = 'Issue Responses';
+
+    protected static ?string $pluralLabel = 'P-CAR Responses';
 
     protected static ?string $navigationIcon = 'heroicon-o-chat-bubble-left-right';
 
@@ -196,9 +195,11 @@ class IssueResponsesResource extends Resource
         return $table
             ->columns([
                 Tables\Columns\TextColumn::make('response_id')
-                    ->label('Response ID'),
+                    ->label('Response ID')
+                    ->searchable('response_id'),
                 Tables\Columns\TextColumn::make('safety_emp_id')
                     ->label('Assign By')
+                    ->searchable('safety_emp_id')
                     ->formatStateUsing(function ($state) {
                         return \App\Models\Employees::where('emp_id', $state)->first()?->full_name ?? $state;
                     }),
@@ -215,7 +216,7 @@ class IssueResponsesResource extends Resource
                         'pending_review'=> 'success',
                         'reopened' => 'warning',
                         'dismissed' =>'danger',
-                        'closed' => 'secondary',
+                        'closed' => 'gray',
                     }),
                 Tables\Columns\TextColumn::make('created_by')
                     ->label('Created By')
@@ -224,11 +225,23 @@ class IssueResponsesResource extends Resource
                     ->formatStateUsing(function ($state) {
                         return \App\Models\Employees::where('emp_id', $state)->first()?->full_name ?? $state;
                     }),
+                Tables\Columns\TextColumn::make('created_at')
+                    ->label('Created At')
+                    ->timezone('Asia/Bangkok')
+                    ->dateTime('d/m/Y H:i'),
 
             ])
-            ->filters([
-                //
+        ->filters([
+            Tables\Filters\SelectFilter::make('status')
+            ->label('Status')
+            ->options([
+                'in_progress' => 'In progress',
+                'pending_review' => 'Pending review',
+                'closed' => 'Closed',
+                'reopened' => 'Reopened',
             ])
+            ->searchable(),
+        ])
             ->actions([
                 Tables\Actions\ViewAction::make(),
                 Tables\Actions\EditAction::make(),
